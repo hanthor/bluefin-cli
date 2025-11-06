@@ -25,12 +25,12 @@ Or provide a path to a local Brewfile.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			// Interactive mode
-			var selectedBundle string
+			var selectedBundles []string
 
 			form := huh.NewForm(
 				huh.NewGroup(
-					huh.NewSelect[string]().
-						Title("Select a bundle to install").
+					huh.NewMultiSelect[string]().
+						Title("Select bundles to install (space to select, enter to confirm)").
 						Options(
 							huh.NewOption("🤖 AI Tools", "ai"),
 							huh.NewOption("💻 CLI Essentials", "cli"),
@@ -38,7 +38,7 @@ Or provide a path to a local Brewfile.`,
 							huh.NewOption("☸️  Kubernetes Tools", "k8s"),
 							huh.NewOption("📦 All Bundles", "all"),
 						).
-						Value(&selectedBundle),
+						Value(&selectedBundles),
 				),
 			)
 
@@ -46,7 +46,13 @@ Or provide a path to a local Brewfile.`,
 				return fmt.Errorf("form error: %w", err)
 			}
 
-			return install.Bundle(selectedBundle)
+			// Install each selected bundle
+			for _, bundle := range selectedBundles {
+				if err := install.Bundle(bundle); err != nil {
+					return err
+				}
+			}
+			return nil
 		}
 
 		return install.Bundle(args[0])

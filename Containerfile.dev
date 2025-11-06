@@ -15,11 +15,27 @@ RUN dnf install -y \
     grep \
     findutils \
     coreutils \
+    procps-ng \
     && dnf clean all
 
 # Set GOTOOLCHAIN to auto to allow downloading newer Go if needed
 ENV GOTOOLCHAIN=auto
 ENV GOSUMDB=sum.golang.org
+
+# Install Homebrew
+RUN useradd -m -s /bin/bash linuxbrew && \
+    echo 'linuxbrew ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+USER linuxbrew
+WORKDIR /home/linuxbrew
+RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && \
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc
+ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
+
+# Install bling dependencies via Homebrew
+RUN brew install eza bat starship zoxide
+
+# Switch back to root
+USER root
 
 # Create test user with home directory
 RUN useradd -m -s /bin/bash testuser && \

@@ -4,16 +4,45 @@
 default:
     @just --list
 
-# Build, test, and run in container (main development workflow)
-test: build-container
+# Build, test, and run in container (main development workflow - bash tests)
+test: build-container build
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "Building Go package and running tests in container..."
+    echo "Running bash integration tests in container..."
     podman run --rm \
         -v "$(pwd):/workspace:Z" \
         -w /workspace \
+        -e HOME=/root \
         bluefin-cli-dev \
-        bash -c 'go build -o bluefin-cli && ./test-container.sh'
+        ./test-container.sh
+
+# Run refactored bash tests (more maintainable)
+test-refactored: build-container build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Running refactored bash tests..."
+    podman run --rm \
+        -v "$(pwd):/workspace:Z" \
+        -w /workspace \
+        -e HOME=/root \
+        bluefin-cli-dev \
+        bash -c 'chmod +x test-container-refactored.sh && ./test-container-refactored.sh'
+
+# Run Go integration tests
+test-go: build-container build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Running Go integration tests..."
+    podman run --rm \
+        -v "$(pwd):/workspace:Z" \
+        -w /workspace \
+        -e HOME=/root \
+        bluefin-cli-dev \
+        go test -v ./test/...
+
+# Run all tests (unit + bash integration + Go integration)
+test-all: unit-test test test-go
+    @echo "All test suites completed!"
 
 # Build the development container image (if not exists or force rebuild)
 build-container:
@@ -39,14 +68,10 @@ unit-test: build-container
         bluefin-cli-dev \
         go test ./... -v
 
-# Build the binary in container
-build: build-container
-    @echo "Building binary in container..."
-    podman run --rm \
-        -v "$(pwd):/workspace:Z" \
-        -w /workspace \
-        bluefin-cli-dev \
-        go build -o bluefin-cli
+# Build the binary locally
+build:
+    @echo "Building binary locally..."
+    go build -o bluefin-cli
 
 # Run integration tests in container
 integration-test: build-container
@@ -67,13 +92,155 @@ container-test: build-container
         bash -c 'go build -o bluefin-cli && cp bluefin-cli /usr/local/bin/ && ./test-container.sh'
 
 # Open an interactive shell in the development container
-shell: build-container
+shell: build-container build
     @echo "Opening interactive shell in development container..."
+    @echo "Binary is ready at: ./bluefin-cli"
+    @echo ""
     podman run --rm -it \
         -v "$(pwd):/workspace:Z" \
         -w /workspace \
+        -e HOME=/root \
         bluefin-cli-dev \
         bash
+
+# Open shell in container with bling already enabled (for manual testing)
+shell-with-bling: build-container build
+    #!/usr/bin/env bash
+    echo "Setting up container with bling enabled..."
+    podman run --rm -it \
+        -v "$(pwd):/workspace:Z" \
+        -w /workspace \
+        -e HOME=/root \
+        bluefin-cli-dev \
+        bash -c 'mkdir -p ~/.config/fish && \
+                 touch ~/.bashrc ~/.zshrc ~/.config/fish/config.fish && \
+                 ./bluefin-cli bling bash on && \
+                 ./bluefin-cli bling zsh on && \
+                 ./bluefin-cli bling fish on && \
+                 ./bluefin-cli motd toggle bash on && \
+                 echo "" && \
+                 echo "=== Bling has been enabled ===" && \
+                 echo "Binary: ./bluefin-cli" && \
+                 echo "Configs: ~/.bashrc, ~/.zshrc, ~/.config/fish/config.fish" && \
+                 echo "Bling scripts: ~/.local/share/bluefin-cli/bling/" && \
+                 echo "" && \
+                 echo "Try: ./bluefin-cli status" && \
+                 echo "     cat ~/.bashrc" && \
+                 echo "     cat ~/.local/share/bluefin-cli/bling/bling.sh" && \
+                 echo "" && \
+                 bash'
+
+# Open bash with bling enabled and sourced
+bash: build-container build
+    #!/usr/bin/env bash
+    echo "Launching bash with bling enabled..."
+    podman run --rm -it \
+        -v "$(pwd):/workspace:Z" \
+        -w /workspace \
+        -e HOME=/root \
+        -e PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+        bluefin-cli-dev \
+        bash -c 'mkdir -p ~/.config/fish && \
+                 touch ~/.bashrc ~/.zshrc ~/.config/fish/config.fish && \
+                 ./bluefin-cli bling bash on > /dev/null 2>&1 && \
+                 echo "✓ Bling enabled - Tools: starship=$(command -v starship), eza=$(command -v eza)" && \
+                 exec bash'
+
+# Open zsh with bling enabled and sourced
+zsh: build-container build
+    #!/usr/bin/env bash
+    echo "Launching zsh with bling enabled..."
+    podman run --rm -it \
+        -v "$(pwd):/workspace:Z" \
+        -w /workspace \
+        -e HOME=/root \
+        -e SHELL=/bin/zsh \
+        -e PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+        bluefin-cli-dev \
+        bash -c 'mkdir -p ~/.config/fish ~/.local/share/bluefin-cli/bling && \
+                 rm -f ~/.zshrc ~/.local/share/bluefin-cli/bling/bling.sh && \
+                 touch ~/.bashrc ~/.zshrc ~/.config/fish/config.fish && \
+                 ./bluefin-cli bling zsh on > /dev/null 2>&1 && \
+                 echo "✓ Bling enabled - Tools: starship=$(command -v starship), eza=$(command -v eza)" && \
+                 ZDOTDIR=/root exec zsh'
+
+# Open fish with bling enabled and sourced
+fish: build-container build
+    #!/usr/bin/env bash
+    echo "Launching fish with bling enabled..."
+    podman run --rm -it \
+        -v "$(pwd):/workspace:Z" \
+        -w /workspace \
+        -e HOME=/root \
+        -e PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+        bluefin-cli-dev \
+        bash -c 'mkdir -p ~/.config/fish && \
+                 touch ~/.bashrc ~/.zshrc ~/.config/fish/config.fish && \
+                 ./bluefin-cli bling fish on > /dev/null 2>&1 && \
+                 exec fish'
+
+# Inspect what files were created by bling
+inspect-bling: build-container build
+    @echo "Inspecting bling files in container..."
+    podman run --rm \
+        -v "$(pwd):/workspace:Z" \
+        -w /workspace \
+        -e HOME=/root \
+        bluefin-cli-dev \
+        bash -c 'mkdir -p ~/.config/fish && \
+                 touch ~/.bashrc ~/.zshrc ~/.config/fish/config.fish && \
+                 ./bluefin-cli bling bash on && \
+                 ./bluefin-cli bling zsh on && \
+                 ./bluefin-cli bling fish on && \
+                 echo "=== Shell Configs ===" && \
+                 echo "" && \
+                 echo "--- ~/.bashrc ---" && \
+                 cat ~/.bashrc && \
+                 echo "" && \
+                 echo "--- ~/.zshrc ---" && \
+                 cat ~/.zshrc && \
+                 echo "" && \
+                 echo "--- ~/.config/fish/config.fish ---" && \
+                 cat ~/.config/fish/config.fish && \
+                 echo "" && \
+                 echo "=== Bling Scripts ===" && \
+                 echo "" && \
+                 echo "--- bling.sh (first 50 lines) ---" && \
+                 head -50 ~/.local/share/bluefin-cli/bling/bling.sh && \
+                 echo "" && \
+                 echo "--- bling.fish (first 30 lines) ---" && \
+                 head -30 ~/.local/share/bluefin-cli/bling/bling.fish'
+
+# Show what MOTD looks like
+inspect-motd: build-container build
+    @echo "Inspecting MOTD in container..."
+    podman run --rm \
+        -v "$(pwd):/workspace:Z" \
+        -w /workspace \
+        -e HOME=/root \
+        bluefin-cli-dev \
+        bash -c 'touch ~/.bashrc && \
+                 ./bluefin-cli motd toggle bash on && \
+                 echo "=== MOTD Configuration ===" && \
+                 echo "" && \
+                 echo "--- Tips available ---" && \
+                 ls -1 ~/.local/share/bluefin-cli/motd/tips/ && \
+                 echo "" && \
+                 echo "--- Sample tip (01-tip.md) ---" && \
+                 cat ~/.local/share/bluefin-cli/motd/tips/01-tip.md && \
+                 echo "" && \
+                 echo "--- MOTD show output ---" && \
+                 ./bluefin-cli motd show'
+
+# Run a specific command in container for debugging
+run CMD: build-container build
+    @echo "Running command in container: {{CMD}}"
+    podman run --rm \
+        -v "$(pwd):/workspace:Z" \
+        -w /workspace \
+        -e HOME=/root \
+        bluefin-cli-dev \
+        bash -c '{{CMD}}'
 
 # Clean up built artifacts
 clean:

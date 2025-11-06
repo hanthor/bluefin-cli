@@ -46,7 +46,7 @@ func Toggle(shell string, enable bool) error {
 		if err != nil {
 			return err
 		}
-		sourceLine = fmt.Sprintf(`if [ -n "${ZSH_VERSION:-}" ]; then emulate bash -c '. %s'; fi`, blingPath)
+		sourceLine = fmt.Sprintf(`test -f %s && source %s`, blingPath, blingPath)
 	case "fish":
 		configFile = filepath.Join(os.Getenv("HOME"), ".config/fish/config.fish")
 		blingPath, err := ensureBlingScript("fish")
