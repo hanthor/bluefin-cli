@@ -11,16 +11,19 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "bluefin-cli",
-	Short: "A powerful CLI tool for managing Homebrew and shell customization",
-	Long: `Bluefin CLI is a modern command-line tool that helps you manage:
-  - Homebrew brewfiles
-  - Shell configuration and setup
-  - Starship theme customization
-  - Development environment tools
-
-Built with ❤️ using Charm TUI libraries.`,
+	Use:     "bluefin-cli",
+	Short:   "A powerful CLI tool for managing Homebrew and shell customization",
+	Long:    `Bluefin CLI brings the bluefin terminal experience to you`,
 	Version: version,
+	// If no subcommand is provided, open the interactive main menu by default.
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Defer to the interactive menu
+		if menuCmd != nil && menuCmd.RunE != nil {
+			return menuCmd.RunE(menuCmd, nil)
+		}
+		// Fallback: show help if menu is not available for some reason
+		return cmd.Help()
+	},
 }
 
 // Execute runs the root command

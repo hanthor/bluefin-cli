@@ -33,6 +33,11 @@ var starshipThemeCmd = &cobra.Command{
 						huh.NewOption("Pure Preset", "pure-preset"),
 						huh.NewOption("Tokyo Night", "tokyo-night"),
 						huh.NewOption("Gruvbox Rainbow", "gruvbox-rainbow"),
+						huh.NewOption("Catppuccin Powerline", "catppuccin-powerline"),
+						huh.NewOption("Jetpack", "jetpack"),
+						huh.NewOption("No Empty Icons", "no-empty-icons"),
+						huh.NewOption("No Nerd Font", "no-nerd-font"),
+						huh.NewOption("Pastel Powerline", "pastel-powerline"),
 					).
 					Value(&selectedTheme),
 			),

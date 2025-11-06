@@ -70,4 +70,52 @@ var installListCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(installCmd)
 	installCmd.AddCommand(installListCmd)
+	installCmd.AddCommand(installWallpapersCmd)
 }
+
+// Wallpapers: install casks from ublue-os/tap
+var installWallpapersCmd = &cobra.Command{
+	Use:   "wallpapers [cask...]",
+	Short: "Install wallpaper casks from ublue-os/tap",
+	Long:  "Install wallpapers published as Homebrew casks from the ublue-os/tap tap.",
+	Args:  cobra.ArbitraryArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 0 {
+			return install.InstallWallpaperCasks(args)
+		}
+
+		// Interactive mode: discover available casks and let user multi-select
+		casks, err := install.GetWallpaperCasks()
+		if err != nil {
+			return fmt.Errorf("failed to discover wallpaper casks: %w", err)
+		}
+		if len(casks) == 0 {
+			return fmt.Errorf("no wallpaper casks found in ublue-os/tap")
+		}
+
+		// Build options list
+		opts := make([]huh.Option[string], 0, len(casks))
+		for _, c := range casks {
+			// Show pretty labels, value is the plain cask name
+			opts = append(opts, huh.NewOption(c, c))
+		}
+
+		var selected []string
+		form := huh.NewForm(
+			huh.NewGroup(
+				huh.NewMultiSelect[string]().
+					Title("Select wallpapers to install (space to select, enter to confirm)").
+					Options(opts...).
+					Value(&selected),
+			),
+		)
+		if err := form.Run(); err != nil {
+			return fmt.Errorf("form error: %w", err)
+		}
+		if len(selected) == 0 {
+			return fmt.Errorf("no wallpapers selected")
+		}
+		return install.InstallWallpaperCasks(selected)
+	},
+}
+

@@ -122,7 +122,6 @@ func ListBundles() {
 	fmt.Println(infoStyle.Render("Usage:"))
 	fmt.Println("  bluefin-cli install <bundle-name>")
 	fmt.Println("  bluefin-cli install /path/to/Brewfile")
-	fmt.Println("  bluefin-cli install all")
 }
 
 func downloadFile(url, filepath string) error {

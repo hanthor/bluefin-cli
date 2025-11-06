@@ -62,7 +62,7 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Build container
-      run: podman build -t bluefin-cli-test -f Containerfile .
+      run: podman build -t bluefin-cli-test -f Containerfile.dev .
       
     - name: Run container tests
       run: podman run --rm bluefin-cli-test
