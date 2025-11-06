@@ -1,26 +1,32 @@
 # Bluefin CLI
 
-A powerful, modern CLI tool for managing Homebrew packages, shell configuration, and development environment customization. Built with beautiful TUIs using [Charm](https://charm.sh/) libraries.
+A powerful, modern CLI tool for managing shell configuration and development environment customization. Built with beautiful TUIs using [Charm](https://charm.sh/) libraries.
 
-## 🎯 Features
+## ✨ Features
 
+- **🎨 Interactive Menu**: Default TUI experience for easy navigation
 - **✨ Bling**: Toggle modern shell enhancements (eza, bat, ugrep, zoxide, atuin, starship)
 - **📰 MOTD**: Beautiful Message of the Day with system info and random tips
-- **📦 Brewfile Management**: Create, edit, and apply Brewfile configurations
-- **� Bundle Installer**: Install curated bundles (ai, cli, fonts, k8s) from Universal Blue
-- **�🐚 Shell Setup**: Interactive shell configuration for Bash, Zsh, and Fish
+- **📦 Bundle Installer**: Install curated tool bundles (ai, cli, fonts, k8s) from Universal Blue
+- **�️ Wallpapers**: Install desktop wallpaper collections from ublue-os/tap
 - **🎨 Starship Themes**: Browse and apply Starship prompt themes
+- **⚙️ OS Scripts**: Run system-provided just recipes and scripts
 - **📊 Status Command**: View configuration and installed tools at a glance
-- **🎪 Beautiful TUIs**: Interactive forms and prompts powered by Charm libraries
 
 ## 🚀 Installation
 
-### Prerequisites
+### Via Homebrew (Recommended)
 
-- Go 1.21 or later
-- Homebrew (for package management features)
+```bash
+brew tap ublue-os/homebrew-experimental-tap
+brew install bluefin-cli
+```
 
 ### Build from Source
+
+**Prerequisites:**
+- Go 1.21 or later
+- Homebrew (for package management features)
 
 ```bash
 git clone https://github.com/hanthor/bluefin-cli.git
@@ -37,7 +43,23 @@ go install github.com/hanthor/bluefin-cli@latest
 
 ## 📖 Usage
 
-### Check Status
+### Interactive Menu (Default)
+
+Simply run the command to launch the interactive menu:
+
+```bash
+bluefin-cli
+```
+
+Or explicitly:
+
+```bash
+bluefin-cli menu
+```
+
+### Command Line Usage
+
+#### Check Status
 
 View your current configuration and installed tools:
 
@@ -45,9 +67,9 @@ View your current configuration and installed tools:
 bluefin-cli status
 ```
 
-### Bling - Modern Shell Enhancements
+#### Bling - Modern Shell Enhancements
 
-Enable bling for your shell:
+Enable/disable bling for your shell:
 
 ```bash
 # Interactive mode
@@ -62,7 +84,7 @@ bluefin-cli bling fish on
 bluefin-cli bling bash off
 ```
 
-### MOTD - Message of the Day
+#### MOTD - Message of the Day
 
 Show the MOTD:
 
@@ -83,13 +105,7 @@ bluefin-cli motd toggle zsh on
 bluefin-cli motd toggle all off
 ```
 
-Configure MOTD theme:
-
-```bash
-bluefin-cli motd config
-```
-
-### Install Bundles
+#### Install Tool Bundles
 
 Install curated Homebrew bundles:
 
@@ -98,50 +114,26 @@ Install curated Homebrew bundles:
 bluefin-cli install list
 
 # Install specific bundle
-bluefin-cli install ai       # AI tools
+bluefin-cli install ai       # AI tools (ollama, aider, etc.)
 bluefin-cli install cli      # CLI essentials
 bluefin-cli install fonts    # Development fonts
 bluefin-cli install k8s      # Kubernetes tools
 
-# Install from local Brewfile
-bluefin-cli install ./my-custom.Brewfile
+# Interactive mode
+bluefin-cli install
 ```
 
-### Brewfile Management
+#### Install Wallpapers
 
-Initialize a new Brewfile with common development tools:
+Install desktop wallpaper collections:
 
 ```bash
-bluefin-cli brewfile init
+# Interactive selection
+bluefin-cli install wallpapers
+
 ```
 
-Add a package to your Brewfile:
-
-```bash
-bluefin-cli brewfile add neovim
-```
-
-Install all packages from your Brewfile:
-
-```bash
-bluefin-cli brewfile apply
-```
-
-### Shell Configuration
-
-Run the interactive shell setup wizard:
-
-```bash
-bluefin-cli shell setup
-```
-
-This will guide you through:
-- Selecting your preferred shell (Bash, Zsh, Fish)
-- Installing Oh My Zsh (for Zsh users)
-- Setting up Starship prompt
-- Configuring modern CLI tools (eza, bat, zoxide, atuin)
-
-### Starship Themes
+#### Starship Themes
 
 Browse and apply Starship preset themes:
 
@@ -155,26 +147,38 @@ Install Starship if not already present:
 bluefin-cli starship install
 ```
 
+#### OS Scripts
+
+Run OS-provided just recipes and shell scripts:
+
+```bash
+bluefin-cli osscripts
+```
+
+This discovers and lists all available recipes from `/usr/share/*/just/` directories.
+
 ## 🔧 What Gets Configured
 
-The shell setup configures these modern CLI tools:
+### Bling Tools
+
+The bling command configures these modern CLI tools:
 
 - **eza**: Modern replacement for `ls` with icons and colors
 - **bat**: `cat` clone with syntax highlighting
 - **zoxide**: Smarter `cd` command that learns your habits
-- **atuin**: Magical shell history with sync and search
+- **atuin**: Magical shell history with sync and search (optional)
 - **starship**: Fast, customizable prompt for any shell
-- **ugrep**: Ultra-fast grep alternative
+- **ugrep**: Ultra-fast grep alternative (optional)
 
-### Aliases
+### Shell Aliases
 
-When bling is sourced in your shell:
+When bling is enabled in your shell:
 
 ```bash
 ll      # eza -l --icons=auto --group-directories-first
 ls      # eza
 cat     # bat --style=plain --pager=never
-grep    # ugrep
+grep    # ugrep (if installed)
 ```
 
 ## 🏗️ Project Structure
@@ -183,20 +187,24 @@ grep    # ugrep
 bluefin-cli/
 ├── main.go              # Application entry point
 ├── cmd/                 # Cobra commands
-│   ├── root.go         # Root command
-│   ├── brewfile.go     # Brewfile management
-│   ├── shell.go        # Shell configuration
-│   └── starship.go     # Starship theme management
+│   ├── root.go         # Root command & menu default
+│   ├── menu.go         # Interactive TUI menu
+│   ├── bling.go        # Bling command
+│   ├── motd.go         # MOTD command
+│   ├── install.go      # Install bundles/wallpapers
+│   ├── osscripts.go    # OS scripts discovery
+│   ├── starship.go     # Starship theme management
+│   └── status.go       # Status display
 ├── internal/            # Internal packages
-│   ├── brewfile/       # Brewfile logic
-│   ├── shell/          # Shell setup logic
-│   └── starship/       # Starship integration
-└── reference/           # Reference implementations (not distributed)
-    ├── packages/       # ublue-os/packages repo
-    └── homebrew-experimental-tap/
+│   ├── bling/          # Bling logic & embedded scripts
+│   ├── motd/           # MOTD generation
+│   ├── install/        # Bundle & wallpaper installation
+│   ├── starship/       # Starship integration
+│   └── status/         # Status checking
+└── test/                # Integration tests
 ```
 
-## 📚 Replicates & Extends
+## 📚 Inspiration
 
 This project consolidates and modernizes functionality from:
 
@@ -209,18 +217,33 @@ This project consolidates and modernizes functionality from:
 ### Prerequisites
 
 - Go 1.21+
-- Make (optional)
+- Podman (for containerized testing)
+- just (for running recipes)
 
 ### Building
 
 ```bash
-go build -o bluefin-cli
+just build
 ```
 
-### Running Locally
+### Testing
 
 ```bash
-go run main.go [command]
+# Run tests in container
+just test
+
+# Run tests locally
+go test ./...
+```
+
+### Interactive Development
+
+Launch shells with bling pre-configured:
+
+```bash
+just bash   # Test in bash
+just zsh    # Test in zsh
+just fish   # Test in fish
 ```
 
 ### Dependencies
@@ -228,13 +251,18 @@ go run main.go [command]
 This project uses:
 
 - [Cobra](https://github.com/spf13/cobra) - CLI framework
-- [Bubble Tea](https://github.com/charmbracelet/bubbletea) - TUI framework
-- [Lipgloss](https://github.com/charmbracelet/lipgloss) - Style definitions
 - [Huh](https://github.com/charmbracelet/huh) - Forms and prompts
+- [Lipgloss](https://github.com/charmbracelet/lipgloss) - Style definitions
 
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 
