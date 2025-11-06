@@ -5,7 +5,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
-	"github.com/yourusername/bluefin-cli/internal/bling"
+	"github.com/hanthor/bluefin-cli/internal/bling"
 )
 
 var blingCmd = &cobra.Command{

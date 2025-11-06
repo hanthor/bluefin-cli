@@ -4,6 +4,7 @@
 [ "${BLING_SOURCED:-0}" -eq 1 ] && return 
 BLING_SOURCED=1
 
+# eza
 # ls aliases
 if [ "$(command -v eza)" ]; then
     alias ll='eza -l --icons=auto --group-directories-first'
@@ -12,7 +13,8 @@ if [ "$(command -v eza)" ]; then
     alias l1='eza -1'
 fi
 
-# ugrep for grep
+# ugrep 
+# for grep
 if [ "$(command -v ug)" ]; then
     alias grep='ug'
     alias egrep='ug -E'
@@ -22,7 +24,8 @@ if [ "$(command -v ug)" ]; then
     alias xzfgrep='ug -zF'
 fi
 
-# bat for cat
+# bat 
+# for cat
 alias cat='bat --style=plain --pager=never' 2>/dev/null
 
 HOMEBREW_PREFIX="${HOMEBREW_PREFIX:-/home/linuxbrew/.linuxbrew}"
@@ -39,6 +42,7 @@ if [ "$(basename "$SHELL")" = "bash" ]; then
     # Initialize atuin before starship to ensure proper command history capture
     # See: https://github.com/atuinsh/atuin/issues/2804 
     [ "$(command -v atuin)" ] && eval "$(atuin init bash ${ATUIN_INIT_FLAGS})"
+
     [ "$(command -v starship)" ] && eval "$(starship init bash)"
     [ "$(command -v zoxide)" ] && eval "$(zoxide init bash)"
 elif [ "$(basename "$SHELL")" = "zsh" ]; then

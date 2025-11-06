@@ -15,37 +15,8 @@ var (
 	infoStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
 )
 
-const defaultBrewfile = `# Taps
-tap "homebrew/bundle"
-tap "homebrew/cask"
-tap "homebrew/core"
-
-# CLI Tools
-brew "git"
-brew "gh"
-brew "wget"
-brew "curl"
-brew "jq"
-brew "ripgrep"
-brew "fd"
-brew "bat"
-brew "eza"
-brew "fzf"
-brew "zoxide"
-brew "starship"
-
-# Development
-brew "neovim"
-brew "tmux"
-
-# Languages
-brew "go"
-brew "node"
-brew "python"
-`
-
-// Initialize creates a new Brewfile
-func Initialize(includeDefaults bool) error {
+// Initialize creates a new, empty Brewfile scaffold
+func Initialize() error {
 	brewfilePath := filepath.Join(".", "Brewfile")
 
 	// Check if Brewfile already exists
@@ -53,12 +24,8 @@ func Initialize(includeDefaults bool) error {
 		return fmt.Errorf("Brewfile already exists in current directory")
 	}
 
-	content := ""
-	if includeDefaults {
-		content = defaultBrewfile
-	} else {
-		content = "# Brewfile - Add your packages here\n\n"
-	}
+	// Start with a minimal Brewfile scaffold
+	content := "# Brewfile - Add your packages here\n\n"
 
 	if err := os.WriteFile(brewfilePath, []byte(content), 0644); err != nil {
 		return fmt.Errorf("failed to create Brewfile: %w", err)

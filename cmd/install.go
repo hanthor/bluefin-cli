@@ -5,7 +5,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
-	"github.com/yourusername/bluefin-cli/internal/install"
+	"github.com/hanthor/bluefin-cli/internal/install"
 )
 
 var installCmd = &cobra.Command{
@@ -18,7 +18,6 @@ Available bundles:
   cli    - CLI essentials (gh, chezmoi, etc.)
   fonts  - Development fonts (Fira Code, JetBrains Mono, etc.)
   k8s    - Kubernetes tools (kubectl, k9s, kind, etc.)
-  all    - Install all bundles
   
 Or provide a path to a local Brewfile.`,
 	Args: cobra.MaximumNArgs(1),
@@ -36,7 +35,6 @@ Or provide a path to a local Brewfile.`,
 							huh.NewOption("💻 CLI Essentials", "cli"),
 							huh.NewOption("🔤 Development Fonts", "fonts"),
 							huh.NewOption("☸️  Kubernetes Tools", "k8s"),
-							huh.NewOption("📦 All Bundles", "all"),
 						).
 						Value(&selectedBundles),
 				),

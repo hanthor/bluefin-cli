@@ -5,8 +5,8 @@ import (
 	"os/exec"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/yourusername/bluefin-cli/internal/bling"
-	"github.com/yourusername/bluefin-cli/internal/motd"
+	"github.com/hanthor/bluefin-cli/internal/bling"
+	"github.com/hanthor/bluefin-cli/internal/motd"
 )
 
 var (

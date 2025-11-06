@@ -1,4 +1,4 @@
-module github.com/yourusername/bluefin-cli
+module github.com/hanthor/bluefin-cli
 
 go 1.25.4
 

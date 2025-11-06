@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/yourusername/bluefin-cli/cmd"
+	"github.com/hanthor/bluefin-cli/cmd"
 )
 
 func main() {

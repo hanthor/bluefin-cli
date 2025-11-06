@@ -5,7 +5,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
-	"github.com/yourusername/bluefin-cli/internal/motd"
+	"github.com/hanthor/bluefin-cli/internal/motd"
 )
 
 var motdCmd = &cobra.Command{

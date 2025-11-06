@@ -23,7 +23,7 @@ A powerful, modern CLI tool for managing Homebrew packages, shell configuration,
 ### Build from Source
 
 ```bash
-git clone https://github.com/yourusername/bluefin-cli.git
+git clone https://github.com/hanthor/bluefin-cli.git
 cd bluefin-cli
 go build -o bluefin-cli
 sudo mv bluefin-cli /usr/local/bin/
@@ -32,7 +32,7 @@ sudo mv bluefin-cli /usr/local/bin/
 ### Using Go Install
 
 ```bash
-go install github.com/yourusername/bluefin-cli@latest
+go install github.com/hanthor/bluefin-cli@latest
 ```
 
 ## 📖 Usage
@@ -102,7 +102,6 @@ bluefin-cli install ai       # AI tools
 bluefin-cli install cli      # CLI essentials
 bluefin-cli install fonts    # Development fonts
 bluefin-cli install k8s      # Kubernetes tools
-bluefin-cli install all      # All bundles
 
 # Install from local Brewfile
 bluefin-cli install ./my-custom.Brewfile

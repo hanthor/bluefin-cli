@@ -4,45 +4,18 @@
 default:
     @just --list
 
-# Build, test, and run in container (main development workflow - bash tests)
+# Run Go tests (canonical test suite)
 test: build-container build
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "Running bash integration tests in container..."
-    podman run --rm \
-        -v "$(pwd):/workspace:Z" \
-        -w /workspace \
-        -e HOME=/root \
-        bluefin-cli-dev \
-        ./test-container.sh
-
-# Run refactored bash tests (more maintainable)
-test-refactored: build-container build
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "Running refactored bash tests..."
-    podman run --rm \
-        -v "$(pwd):/workspace:Z" \
-        -w /workspace \
-        -e HOME=/root \
-        bluefin-cli-dev \
-        bash -c 'chmod +x test-container-refactored.sh && ./test-container-refactored.sh'
-
-# Run Go integration tests
-test-go: build-container build
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "Running Go integration tests..."
+    echo "Running Go tests in container..."
     podman run --rm \
         -v "$(pwd):/workspace:Z" \
         -w /workspace \
         -e HOME=/root \
         bluefin-cli-dev \
         go test -v ./test/...
-
-# Run all tests (unit + bash integration + Go integration)
-test-all: unit-test test test-go
-    @echo "All test suites completed!"
+    echo "Go tests completed!"
 
 # Build the development container image (if not exists or force rebuild)
 build-container:
@@ -73,23 +46,6 @@ build:
     @echo "Building binary locally..."
     go build -o bluefin-cli
 
-# Run integration tests in container
-integration-test: build-container
-    @echo "Running integration tests in container..."
-    podman run --rm \
-        -v "$(pwd):/workspace:Z" \
-        -w /workspace \
-        bluefin-cli-dev \
-        bash -c 'go build -o bluefin-cli && ./test-integration.sh'
-
-# Run container tests (comprehensive shell modification tests)
-container-test: build-container
-    @echo "Running comprehensive container tests..."
-    podman run --rm \
-        -v "$(pwd):/workspace:Z" \
-        -w /workspace \
-        bluefin-cli-dev \
-        bash -c 'go build -o bluefin-cli && cp bluefin-cli /usr/local/bin/ && ./test-container.sh'
 
 # Open an interactive shell in the development container
 shell: build-container build

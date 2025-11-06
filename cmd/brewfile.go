@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"fmt"
-
-	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
-	"github.com/yourusername/bluefin-cli/internal/brewfile"
+	"github.com/hanthor/bluefin-cli/internal/brewfile"
 )
 
 var brewfileCmd = &cobra.Command{
@@ -17,24 +14,9 @@ var brewfileCmd = &cobra.Command{
 var brewfileInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize a new Brewfile",
-	Long:  `Create a new Brewfile in the current directory with common packages.`,
+	Long:  `Create a new (empty) Brewfile in the current directory.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var includeDefaults bool
-
-		form := huh.NewForm(
-			huh.NewGroup(
-				huh.NewConfirm().
-					Title("Include default packages?").
-					Description("Add commonly used development tools to your Brewfile").
-					Value(&includeDefaults),
-			),
-		)
-
-		if err := form.Run(); err != nil {
-			return fmt.Errorf("form error: %w", err)
-		}
-
-		return brewfile.Initialize(includeDefaults)
+		return brewfile.Initialize()
 	},
 }
 

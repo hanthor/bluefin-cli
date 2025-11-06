@@ -52,8 +52,8 @@ var defaultTemplate = `# 󱍢 Welcome to Bluefin CLI
 
 %s
 
-- **󰊤** [GitHub Issues](https://github.com/yourusername/bluefin-cli/issues)
-- **󰈙** [Documentation](https://github.com/yourusername/bluefin-cli)
+- **󰊤** [GitHub Issues](https://github.com/hanthor/bluefin-cli/issues)
+- **󰈙** [Documentation](https://github.com/hanthor/bluefin-cli)
 `
 
 type ImageInfo struct {

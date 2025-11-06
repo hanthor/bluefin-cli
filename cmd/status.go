@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/yourusername/bluefin-cli/internal/status"
+	"github.com/hanthor/bluefin-cli/internal/status"
 )
 
 var statusCmd = &cobra.Command{
