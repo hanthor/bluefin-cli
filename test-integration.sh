@@ -52,11 +52,15 @@ setup() {
     fi
 }
 
-# Cleanup test environment
+# Cleanup function
 cleanup() {
-    print_info "Cleaning up test environment..."
-    rm -rf "$TEST_HOME"
-    rm -f bluefin-cli
+    if [ -n "${TEST_HOME:-}" ] && [ -d "$TEST_HOME" ]; then
+        # Clean Go module cache properly to avoid permission issues
+        if [ -d "$TEST_HOME/go/pkg/mod" ]; then
+            chmod -R u+w "$TEST_HOME/go/pkg/mod" 2>/dev/null || true
+        fi
+        rm -rf "$TEST_HOME" 2>/dev/null || true
+    fi
 }
 
 # Test: Binary executes and shows help

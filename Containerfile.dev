@@ -1,0 +1,40 @@
+# Containerfile.dev - Development environment for bluefin-cli
+# This image contains all build dependencies but no source code
+# Source code is mounted at runtime for fast iteration
+
+FROM registry.fedoraproject.org/fedora:43
+
+# Install all dependencies in one layer
+RUN dnf install -y \
+    golang \
+    git \
+    bash \
+    zsh \
+    fish \
+    curl \
+    grep \
+    findutils \
+    coreutils \
+    && dnf clean all
+
+# Set GOTOOLCHAIN to auto to allow downloading newer Go if needed
+ENV GOTOOLCHAIN=auto
+ENV GOSUMDB=sum.golang.org
+
+# Create test user with home directory
+RUN useradd -m -s /bin/bash testuser && \
+    mkdir -p /home/testuser/.config/fish && \
+    touch /home/testuser/.bashrc \
+          /home/testuser/.zshrc \
+          /home/testuser/.config/fish/config.fish && \
+    chown -R testuser:testuser /home/testuser
+
+# Set up workspace directory
+RUN mkdir -p /workspace && chown testuser:testuser /workspace
+
+# Default to root user so we can install the binary to /usr/local/bin during tests
+USER root
+WORKDIR /workspace
+
+# Default command
+CMD ["/bin/bash"]
