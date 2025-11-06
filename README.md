@@ -15,7 +15,7 @@ A powerful, modern CLI tool for managing shell configuration and development env
 
 ## 🚀 Installation
 
-### Via Homebrew (Recommended)
+### NOT WORKING YET Via Homebrew
 
 ```bash
 brew tap ublue-os/homebrew-experimental-tap
@@ -114,7 +114,7 @@ Install curated Homebrew bundles:
 bluefin-cli install list
 
 # Install specific bundle
-bluefin-cli install ai       # AI tools (ollama, aider, etc.)
+bluefin-cli install ai       # AI tools
 bluefin-cli install cli      # CLI essentials
 bluefin-cli install fonts    # Development fonts
 bluefin-cli install k8s      # Kubernetes tools
@@ -134,7 +134,7 @@ bluefin-cli install wallpapers
 ```
 
 #### Starship Themes
-
+you can change your prompy lookks
 Browse and apply Starship preset themes:
 
 ```bash
