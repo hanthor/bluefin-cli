@@ -2,6 +2,11 @@ name: goreleaser
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to tag (e.g. v1.0.0)'
+        required: true
+        type: string
   push:
     tags:
       - "*"
@@ -17,11 +22,23 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Tag and Push
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ inputs.version }}
+          git push origin ${{ inputs.version }}
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
+
       - name: Run GoReleaser
+        # Only run goreleaser when a tag is pushed (either manually or by the step above)
+        if: startsWith(github.ref, 'refs/tags/')
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
