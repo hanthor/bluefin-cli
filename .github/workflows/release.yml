@@ -1,4 +1,4 @@
-name: goreleaser
+name: release
 
 on:
   workflow_dispatch:
@@ -7,15 +7,12 @@ on:
         description: 'Version to tag (e.g. v1.0.0)'
         required: true
         type: string
-  push:
-    tags:
-      - "*"
 
 permissions:
   contents: write
 
 jobs:
-  goreleaser:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,26 +20,40 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Tag and Push
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag ${{ inputs.version }}
-          git push origin ${{ inputs.version }}
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
 
-      - name: Run GoReleaser
-        # Only run goreleaser when a tag is pushed (either manually or by the step above)
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-        uses: goreleaser/goreleaser-action@v6
+      - name: Build and Package
+        run: |
+          VERSION=${{ inputs.version }}
+          # Remove 'v' prefix for filename if desired, or keep it. 
+          # Cask config: bluefin-cli_#{version}_linux_amd64.tar.gz where version is e.g. 0.0.1
+          # But the input is v1.0.0.
+          # Let's normalize clean version for filenames.
+          CLEAN_VERSION=${VERSION#v}
+          
+          mkdir -p dist
+          
+          echo "Building Linux AMD64..."
+          GOOS=linux GOARCH=amd64 go build -o bluefin-cli .
+          tar -czvf dist/bluefin-cli_${CLEAN_VERSION}_linux_amd64.tar.gz bluefin-cli
+          rm bluefin-cli
+          
+          echo "Building Linux ARM64..."
+          GOOS=linux GOARCH=arm64 go build -o bluefin-cli .
+          tar -czvf dist/bluefin-cli_${CLEAN_VERSION}_linux_arm64.tar.gz bluefin-cli
+          rm bluefin-cli
+          
+          echo "Generating Checksums..."
+          cd dist
+          sha256sum * > checksums.txt
+          cd ..
+          
+      - name: Release
+        uses: softprops/action-gh-release@v1
         with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ inputs.version }}
+          files: dist/*
+          generate_release_notes: true
