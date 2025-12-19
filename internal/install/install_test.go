@@ -17,8 +17,14 @@ func TestBundleValidation(t *testing.T) {
 		expectErr bool
 	}{
 		{"Valid ai bundle", "ai", false},
+		{"Valid artwork bundle", "artwork", false},
 		{"Valid cli bundle", "cli", false},
+		{"Valid cncf bundle", "cncf", false},
+		{"Valid experimental-ide bundle", "experimental-ide", false},
+
 		{"Valid fonts bundle", "fonts", false},
+		{"Valid full-desktop bundle", "full-desktop", false},
+		{"Valid ide bundle", "ide", false},
 		{"Valid k8s bundle", "k8s", false},
 		{"Invalid bundle", "invalid", true},
 	}

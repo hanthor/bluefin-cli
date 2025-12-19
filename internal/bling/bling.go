@@ -11,6 +11,55 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// InstallTools iterates through the config and installs enabled tools
+func InstallTools(cfg *Config) {
+	tools := []struct {
+		enabled bool
+		binary  string
+		pkg     string
+	}{
+		{cfg.Eza, "eza", "eza"},
+		{cfg.Ugrep, "ug", "ugrep"},
+		{cfg.Bat, "bat", "bat"},
+		{cfg.Atuin, "atuin", "atuin"},
+		{cfg.Starship, "starship", "starship"},
+		{cfg.Zoxide, "zoxide", "zoxide"},
+		{cfg.Uutils, "uutils", "uutils-coreutils"},
+	}
+
+	for _, t := range tools {
+		if t.enabled {
+			if err := ensureTool(t.binary, t.pkg); err != nil {
+				fmt.Println(errorStyle.Render(fmt.Sprintf("Warning: Failed to install %s: %v", t.pkg, err)))
+			}
+		}
+	}
+}
+
+// ensureTool checks if a tool is available and installs it via brew if missing
+func ensureTool(binary, pkg string) error {
+	// Check if tool is already installed
+	if _, err := exec.LookPath(binary); err == nil {
+		return nil
+	}
+
+	// Not found, check if brew is available
+	if _, err := exec.LookPath("brew"); err != nil {
+		fmt.Println(errorStyle.Render(fmt.Sprintf("Warning: Homebrew not found. Cannot auto-install %s.", pkg)))
+		return nil // Don't fail config generation
+	}
+
+	fmt.Println(infoStyle.Render(fmt.Sprintf("⬇️  Installing %s via Homebrew...", pkg)))
+	cmd := exec.Command("brew", "install", pkg)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install %s: %w", pkg, err)
+	}
+	fmt.Println(successStyle.Render(fmt.Sprintf("✓ %s installed successfully!", pkg)))
+	return nil
+}
+
 //go:embed resources/bling.sh
 var blingShScript string
 
@@ -39,6 +88,20 @@ func Toggle(shell string, enable bool) error {
 		if err != nil {
 			return err
 		}
+		// Ensure config/env files exist
+		if _, err := LoadConfig(); err != nil {
+			return fmt.Errorf("failed to load/init config: %w", err)
+		}
+		// We re-save to ensure env files are generated matching the config
+		cfg, _ := LoadConfig()
+		if err := GenerateEnvFiles(cfg); err != nil {
+			return fmt.Errorf("failed to generate env files: %w", err)
+		}
+
+		if enable {
+			InstallTools(cfg)
+		}
+
 		sourceLine = fmt.Sprintf(`if [ -n "${BASH_VERSION:-}" ]; then . %s; fi`, blingPath)
 	case "zsh":
 		configFile = filepath.Join(os.Getenv("HOME"), ".zshrc")
@@ -46,6 +109,19 @@ func Toggle(shell string, enable bool) error {
 		if err != nil {
 			return err
 		}
+		// Ensure config/env files exist
+		if _, err := LoadConfig(); err != nil {
+			return fmt.Errorf("failed to load/init config: %w", err)
+		}
+		cfg, _ := LoadConfig()
+		if err := GenerateEnvFiles(cfg); err != nil {
+			return fmt.Errorf("failed to generate env files: %w", err)
+		}
+
+		if enable {
+			InstallTools(cfg)
+		}
+
 		sourceLine = fmt.Sprintf(`test -f %s && source %s`, blingPath, blingPath)
 	case "fish":
 		configFile = filepath.Join(os.Getenv("HOME"), ".config/fish/config.fish")
@@ -53,6 +129,19 @@ func Toggle(shell string, enable bool) error {
 		if err != nil {
 			return err
 		}
+		// Ensure config/env files exist
+		if _, err := LoadConfig(); err != nil {
+			return fmt.Errorf("failed to load/init config: %w", err)
+		}
+		cfg, _ := LoadConfig()
+		if err := GenerateEnvFiles(cfg); err != nil {
+			return fmt.Errorf("failed to generate env files: %w", err)
+		}
+
+		if enable {
+			InstallTools(cfg)
+		}
+
 		sourceLine = fmt.Sprintf("source %s", blingPath)
 	default:
 		return fmt.Errorf("unsupported shell: %s (supported: bash, zsh, fish)", shell)

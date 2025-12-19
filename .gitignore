@@ -32,5 +32,4 @@ bluefin-cli
 Thumbs.db
 
 # Reference repos (large, not needed in git)
-reference/packages/
-reference/homebrew-experimental-tap/
+hack/

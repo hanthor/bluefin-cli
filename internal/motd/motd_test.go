@@ -1,8 +1,10 @@
 package motd
 
 import (
+	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -206,4 +208,56 @@ func TestToggleIdempotency(t *testing.T) {
 	if markerCount > 1 {
 		t.Errorf("Expected at most 1 MOTD marker, found %d", markerCount)
 	}
+}
+
+func TestShow(t *testing.T) {
+	// Create temporary home directory
+	tmpHome := t.TempDir()
+	os.Setenv("HOME", tmpHome)
+	defer os.Unsetenv("HOME")
+
+	// Capture stdout
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	// Restore stdout on exit
+	defer func() {
+		os.Stdout = oldStdout
+	}()
+
+	err := Show()
+	if err != nil {
+		t.Errorf("Show() returned error: %v", err)
+	}
+
+	// Read captured output
+	w.Close()
+	// ReadAll from pipe
+	out, _ := io.ReadAll(r)
+	output := string(out)
+
+	// Verify expected output
+	// We expect the default template content
+	expectedStrings := []string{
+		"Welcome to Bluefin CLI",
+		"Command",
+		"Description",
+		"bluefin-cli",
+		"GitHub Issues",
+	}
+
+	strippedOutput := stripAnsi(output)
+
+	for _, s := range expectedStrings {
+		if !strings.Contains(strippedOutput, s) {
+			t.Errorf("Expected output to contain %q, got:\n%s", s, strippedOutput)
+		}
+	}
+}
+
+func stripAnsi(str string) string {
+	const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
+	var re = regexp.MustCompile(ansi)
+	return re.ReplaceAllString(str, "")
 }

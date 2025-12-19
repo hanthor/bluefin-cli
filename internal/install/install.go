@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -19,27 +20,54 @@ var (
 	titleStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("14")).Bold(true)
 )
 
-const baseURL = "https://raw.githubusercontent.com/ublue-os/bluefin/refs/heads/main/brew"
+const (
+	commonBaseURL   = "https://raw.githubusercontent.com/projectbluefin/common/main/system_files"
+	defaultBrewPath = "shared/usr/share/ublue-os/homebrew"
+)
 
-var bundles = map[string]struct {
+type BundleSpec struct {
 	File        string
 	Description string
-}{
+	Path        string // Optional: override defaultBrewPath
+}
+
+var bundles = map[string]BundleSpec{
 	"ai": {
-		File:        "bluefin-ai.Brewfile",
+		File:        "ai-tools.Brewfile",
 		Description: "AI tools: Goose, Codex, Gemini, Ramalama, etc.",
 	},
+	"artwork": {
+		File:        "artwork.Brewfile",
+		Description: "Artwork and design tools.",
+	},
 	"cli": {
-		File:        "bluefin-cli.Brewfile",
+		File:        "cli.Brewfile",
 		Description: "CLI essentials: GitHub CLI, chezmoi, etc.",
 	},
+	"cncf": {
+		File:        "cncf.Brewfile",
+		Description: "Cloud Native Computing Foundation tools.",
+	},
+	"experimental-ide": {
+		File:        "experimental-ide.Brewfile",
+		Description: "Experimental IDE tools.",
+	},
 	"fonts": {
-		File:        "bluefin-fonts.Brewfile",
+		File:        "fonts.Brewfile",
 		Description: "Development fonts: Fira Code, JetBrains Mono, etc.",
 	},
+	"full-desktop": {
+		File:        "full-desktop.Brewfile",
+		Description: "Full GNOME Desktop apps.",
+		Path:        "bluefin/usr/share/ublue-os/homebrew",
+	},
+	"ide": {
+		File:        "ide.Brewfile",
+		Description: "IDE tools: VS Code, JetBrains Toolbox, etc.",
+	},
 	"k8s": {
-		File:        "bluefin-k8s.Brewfile",
-		Description: "Kubernetes tools: kubectl, k9s, kind, etc.",
+		File:        "k8s-tools.Brewfile",
+		Description: "Kubernetes tools: kubectl, k9s, kubectx, etc.",
 	},
 }
 
@@ -75,11 +103,24 @@ func Bundle(nameOrPath string) error {
 		// It's a bundle name
 		bundle, ok := bundles[nameOrPath]
 		if !ok {
-			return fmt.Errorf("unknown bundle: %s (available: ai, cli, fonts, k8s, all)", nameOrPath)
+			return fmt.Errorf("unknown bundle: %s (available: ai, artwork, cli, cncf, experimental-ide, fonts, full-desktop, ide, k8s, all)", nameOrPath)
+		}
+
+		// Ensure Flathub if using full-desktop
+		if nameOrPath == "full-desktop" {
+			if err := EnsureFlathub(); err != nil {
+				return err
+			}
+		}
+
+		// determine path
+		path := defaultBrewPath
+		if bundle.Path != "" {
+			path = bundle.Path
 		}
 
 		// Download the Brewfile
-		url := fmt.Sprintf("%s/%s", baseURL, bundle.File)
+		url := fmt.Sprintf("%s/%s/%s", commonBaseURL, path, bundle.File)
 		tmpDir := os.TempDir()
 		brewfilePath = filepath.Join(tmpDir, bundle.File)
 
@@ -143,4 +184,41 @@ func downloadFile(url, filepath string) error {
 
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+// IsLinux checks if the OS is Linux
+func IsLinux() bool {
+	return runtime.GOOS == "linux"
+}
+
+// IsGnome checks if the current desktop environment is GNOME
+func IsGnome() bool {
+	xdgCurrentDesktop := os.Getenv("XDG_CURRENT_DESKTOP")
+	return strings.Contains(strings.ToUpper(xdgCurrentDesktop), "GNOME")
+}
+
+// CheckFlatpak checks if flatpak is installed
+func CheckFlatpak() error {
+	_, err := exec.LookPath("flatpak")
+	return err
+}
+
+// EnsureFlathub ensures Flathub remote is added if flatpak is available
+func EnsureFlathub() error {
+	if err := CheckFlatpak(); err != nil {
+		return fmt.Errorf("flatpak not found. Please install flatpak first: https://flatpak.org/setup/")
+	}
+
+	// Check if flathub exists
+	cmd := exec.Command("flatpak", "remote-list")
+	out, err := cmd.Output()
+	if err == nil && strings.Contains(string(out), "flathub") {
+		return nil
+	}
+
+	fmt.Println(infoStyle.Render("Adding Flathub remote..."))
+	addCmd := exec.Command("flatpak", "remote-add", "--if-not-exists", "flathub", "https://dl.flathub.org/repo/flathub.flatpakrepo")
+	addCmd.Stdout = os.Stdout
+	addCmd.Stderr = os.Stderr
+	return addCmd.Run()
 }

@@ -6,49 +6,52 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/charmbracelet/lipgloss"
+	"github.com/hanthor/bluefin-cli/internal/tui"
 )
 
 var (
-	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Bold(true)
-	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Bold(true)
-	infoStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
+	// For testing
+	execCommand = exec.Command
+	runCommand  = func(cmd *exec.Cmd) error {
+		return cmd.Run()
+	}
+	lookPath = exec.LookPath
 )
 
 // Install downloads and installs Starship
 func Install() error {
 	// Check if already installed
-	if _, err := exec.LookPath("starship"); err == nil {
-		fmt.Println(successStyle.Render("✓ Starship is already installed"))
+	if _, err := lookPath("starship"); err == nil {
+		fmt.Println(tui.SuccessStyle.Render("✓ Starship is already installed"))
 		return nil
 	}
 
-	fmt.Println(infoStyle.Render("⬇️  Installing Starship..."))
+	fmt.Println(tui.InfoStyle.Render("⬇️  Installing Starship..."))
 
 	// Use Homebrew if available
-	if _, err := exec.LookPath("brew"); err == nil {
-		cmd := exec.Command("brew", "install", "starship")
+	if _, err := lookPath("brew"); err == nil {
+		cmd := execCommand("brew", "install", "starship")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 
-		if err := cmd.Run(); err != nil {
+		if err := runCommand(cmd); err != nil {
 			return fmt.Errorf("brew install failed: %w", err)
 		}
 
-		fmt.Println(successStyle.Render("✓ Starship installed successfully!"))
+		fmt.Println(tui.SuccessStyle.Render("✓ Starship installed successfully!"))
 		return nil
 	}
 
 	// Fallback to official installer
-	cmd := exec.Command("sh", "-c", "curl -sS https://starship.rs/install.sh | sh -s -- -y")
+	cmd := execCommand("sh", "-c", "curl -sS https://starship.rs/install.sh | sh -s -- -y")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
+	if err := runCommand(cmd); err != nil {
 		return fmt.Errorf("installation failed: %w", err)
 	}
 
-	fmt.Println(successStyle.Render("✓ Starship installed successfully!"))
+	fmt.Println(tui.SuccessStyle.Render("✓ Starship installed successfully!"))
 	return nil
 }
 
@@ -69,11 +72,11 @@ func ApplyTheme(themeName string) error {
 
 
 	// Download and apply the preset
-	cmd := exec.Command("starship", "preset", themeName, "-o", starshipConfig)
+	cmd := execCommand("starship", "preset", themeName, "-o", starshipConfig)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
+	if err := runCommand(cmd); err != nil {
 		return fmt.Errorf("failed to apply theme: %w", err)
 	}
 

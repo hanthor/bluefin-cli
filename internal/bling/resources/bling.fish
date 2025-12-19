@@ -1,9 +1,33 @@
 #!/usr/bin/env fish
 
-# FIXME: add no-source-twice fix
+# Source the configuration environment file if it exists
+set BLING_ENV_FILE "$HOME/.local/share/bluefin-cli/bling/bling-env.fish"
+if test -f "$BLING_ENV_FILE"
+    source "$BLING_ENV_FILE"
+end
+
+# Default to enabled if variable is not set (backwards compatibility)
+if not set -q BLING_ENABLE_EZA
+    set BLING_ENABLE_EZA 1
+end
+if not set -q BLING_ENABLE_UGREP
+    set BLING_ENABLE_UGREP 1
+end
+if not set -q BLING_ENABLE_BAT
+    set BLING_ENABLE_BAT 1
+end
+if not set -q BLING_ENABLE_ATUIN
+    set BLING_ENABLE_ATUIN 1
+end
+if not set -q BLING_ENABLE_STARSHIP
+    set BLING_ENABLE_STARSHIP 1
+end
+if not set -q BLING_ENABLE_ZOXIDE
+    set BLING_ENABLE_ZOXIDE 1
+end
 
 # ls aliases
-if [ "$(command -v eza)" ]
+if test "$BLING_ENABLE_EZA" -eq 1; and type -q eza
     alias ll='eza -l --icons=auto --group-directories-first'
     alias l.='eza -d .*'
     alias ls='eza'
@@ -11,7 +35,7 @@ if [ "$(command -v eza)" ]
 end
 
 # ugrep for grep
-if [ "$(command -v ug)" ]
+if test "$BLING_ENABLE_UGREP" -eq 1; and type -q ug
     alias grep='ug'
     alias egrep='ug -E'
     alias fgrep='ug -F'
@@ -21,16 +45,24 @@ if [ "$(command -v ug)" ]
 end
 
 # bat for cat
-alias cat='bat --style=plain --pager=never' 2>/dev/null
+if test "$BLING_ENABLE_BAT" -eq 1
+    alias cat='bat --style=plain --pager=never' 2>/dev/null
+end
 
 if status is-interactive
     # Initialize atuin before starship to ensure proper command history capture
     # Atuin allows these flags: "--disable-up-arrow" and/or "--disable-ctrl-r"
     # Use by setting a universal variable, e.g. set -U ATUIN_INIT_FLAGS "--disable-up-arrow"
     # Or set in config.fish before this file is sourced
-    [ "$(command -v atuin)" ] && eval "$(atuin init fish $ATUIN_INIT_FLAGS)"
+    if test "$BLING_ENABLE_ATUIN" -eq 1; and type -q atuin
+        atuin init fish $ATUIN_INIT_FLAGS | source
+    end
 
-    [ "$(command -v starship)" ] && eval "$(starship init fish)"
+    if test "$BLING_ENABLE_STARSHIP" -eq 1; and type -q starship
+        starship init fish | source
+    end
 
-    [ "$(command -v zoxide)" ] && eval "$(zoxide init fish)"
+    if test "$BLING_ENABLE_ZOXIDE" -eq 1; and type -q zoxide
+        zoxide init fish | source
+    end
 end

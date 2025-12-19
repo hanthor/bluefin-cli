@@ -10,7 +10,6 @@ A powerful, modern CLI tool for managing shell configuration and development env
 - **📦 Bundle Installer**: Install curated tool bundles (ai, cli, fonts, k8s) from Universal Blue
 - **�️ Wallpapers**: Install desktop wallpaper collections from ublue-os/tap
 - **🎨 Starship Themes**: Browse and apply Starship prompt themes
-- **⚙️ OS Scripts**: Run system-provided just recipes and scripts
 - **📊 Status Command**: View configuration and installed tools at a glance
 
 ## 🚀 Installation
@@ -147,15 +146,6 @@ Install Starship if not already present:
 bluefin-cli starship install
 ```
 
-#### OS Scripts
-
-Run OS-provided just recipes and shell scripts:
-
-```bash
-bluefin-cli osscripts
-```
-
-This discovers and lists all available recipes from `/usr/share/*/just/` directories.
 
 ## 🔧 What Gets Configured
 
@@ -192,7 +182,6 @@ bluefin-cli/
 │   ├── bling.go        # Bling command
 │   ├── motd.go         # MOTD command
 │   ├── install.go      # Install bundles/wallpapers
-│   ├── osscripts.go    # OS scripts discovery
 │   ├── starship.go     # Starship theme management
 │   └── status.go       # Status display
 ├── internal/            # Internal packages
