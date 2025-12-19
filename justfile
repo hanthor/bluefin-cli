@@ -4,6 +4,10 @@
 default:
     @just --list
 
+deps:
+    @echo "Installing dependencies..."
+    @brew install go
+
 # Run Go tests (canonical test suite)
 test: build-container build
     #!/usr/bin/env bash

@@ -26,9 +26,6 @@ var menuCmd = &cobra.Command{
 				huh.NewOption("🖼  Wallpapers", "wallpapers"),
 				huh.NewOption(" Starship Theme", "starship"),
 			}
-			if osscriptsAvailable() {
-				opts = append(opts, huh.NewOption("⚙️  OS Scripts", "osscripts"))
-			}
 			opts = append(opts, huh.NewOption("Exit", "exit"))
 
 			var choice string
@@ -69,10 +66,6 @@ var menuCmd = &cobra.Command{
 				}
 			case "starship":
 				if err := starshipMenu(); err != nil {
-					return err
-				}
-			case "osscripts":
-				if err := osscriptsMenu(); err != nil {
 					return err
 				}
 			case "exit":
