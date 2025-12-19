@@ -45,6 +45,16 @@ jobs:
           GOOS=linux GOARCH=arm64 go build -o bluefin-cli .
           tar -czvf dist/bluefin-cli_${CLEAN_VERSION}_linux_arm64.tar.gz bluefin-cli
           rm bluefin-cli
+
+          echo "Building Darwin AMD64..."
+          GOOS=darwin GOARCH=amd64 go build -o bluefin-cli .
+          tar -czvf dist/bluefin-cli_${CLEAN_VERSION}_darwin_amd64.tar.gz bluefin-cli
+          rm bluefin-cli
+
+          echo "Building Darwin ARM64..."
+          GOOS=darwin GOARCH=arm64 go build -o bluefin-cli .
+          tar -czvf dist/bluefin-cli_${CLEAN_VERSION}_darwin_arm64.tar.gz bluefin-cli
+          rm bluefin-cli
           
           echo "Generating Checksums..."
           cd dist
