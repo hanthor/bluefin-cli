@@ -21,8 +21,11 @@ func Show() error {
 	fmt.Println(titleStyle.Render("Bluefin CLI Status"))
 	fmt.Println()
 
+	// --- Left Column ---
+	var leftCol string
+
 	// Bling status
-	fmt.Println(labelStyle.Render("Shell Bling:"))
+	leftCol += labelStyle.Render("Shell Bling:") + "\n"
 	blingStatus := bling.CheckStatus()
 	for _, shell := range []string{"bash", "zsh", "fish"} {
 		status := "disabled"
@@ -35,15 +38,15 @@ func Show() error {
 			symbol = "✓"
 		}
 
-		fmt.Printf("  %s %s: %s\n", 
+		leftCol += fmt.Sprintf("  %s %s: %s\n", 
 			style.Render(symbol),
 			shell,
 			style.Render(status))
 	}
-	fmt.Println()
+	leftCol += "\n"
 
 	// MOTD status
-	fmt.Println(labelStyle.Render("Message of the Day:"))
+	leftCol += labelStyle.Render("Message of the Day:") + "\n"
 	motdStatus := motd.CheckStatus()
 	for _, shell := range []string{"bash", "zsh", "fish"} {
 		status := "disabled"
@@ -56,15 +59,17 @@ func Show() error {
 			symbol = "✓"
 		}
 
-		fmt.Printf("  %s %s: %s\n", 
+		leftCol += fmt.Sprintf("  %s %s: %s\n", 
 			style.Render(symbol),
 			shell,
 			style.Render(status))
 	}
-	fmt.Println()
+
+	// --- Right Column ---
+	var rightCol string
 
 	// Tool dependencies
-	fmt.Println(labelStyle.Render("Required Tools:"))
+	rightCol += labelStyle.Render("Required Tools:") + "\n"
 	deps := bling.CheckDependencies()
 	tools := []string{"eza", "bat", "zoxide", "atuin", "starship", "ugrep"}
 	
@@ -79,15 +84,15 @@ func Show() error {
 			symbol = "✓"
 		}
 
-		fmt.Printf("  %s %s: %s\n", 
+		rightCol += fmt.Sprintf("  %s %s: %s\n", 
 			style.Render(symbol),
 			tool,
 			style.Render(status))
 	}
-	fmt.Println()
+	rightCol += "\n"
 
 	// Additional tools
-	fmt.Println(labelStyle.Render("Optional Tools:"))
+	rightCol += labelStyle.Render("Optional Tools:") + "\n"
 	optionalTools := []string{"glow", "fastfetch", "gh", "jq", "fzf"}
 	for _, tool := range optionalTools {
 		_, err := exec.LookPath(tool)
@@ -101,17 +106,17 @@ func Show() error {
 			symbol = "✓"
 		}
 
-		fmt.Printf("  %s %s: %s\n", 
+		rightCol += fmt.Sprintf("  %s %s: %s\n", 
 			style.Render(symbol),
 			tool,
 			style.Render(status))
 	}
-	fmt.Println()
+	rightCol += "\n"
 
 	// Homebrew status
-	fmt.Println(labelStyle.Render("Package Manager:"))
+	rightCol += labelStyle.Render("Package Manager:") + "\n"
 	if _, err := exec.LookPath("brew"); err == nil {
-		fmt.Printf("  %s Homebrew: %s\n", 
+		rightCol += fmt.Sprintf("  %s Homebrew: %s\n", 
 			enabledStyle.Render("✓"),
 			enabledStyle.Render("installed"))
 		
@@ -119,15 +124,23 @@ func Show() error {
 		if output, err := exec.Command("brew", "--version").Output(); err == nil {
 			version := string(output)
 			if len(version) > 0 {
-				fmt.Printf("    %s\n", version[:len(version)-1]) // Remove trailing newline
+				rightCol += fmt.Sprintf("    %s\n", version[:len(version)-1])
 			}
 		}
 	} else {
-		fmt.Printf("  %s Homebrew: %s\n", 
+		rightCol += fmt.Sprintf("  %s Homebrew: %s\n", 
 			disabledStyle.Render("✗"),
 			disabledStyle.Render("not installed"))
-		fmt.Println("    Install from: https://brew.sh")
+		rightCol += "    Install from: https://brew.sh\n"
 	}
+
+	// Combine columns with padding
+	formatted := lipgloss.JoinHorizontal(lipgloss.Top, 
+		lipgloss.NewStyle().Width(40).Render(leftCol),
+		string(rightCol),
+	)
+
+	fmt.Println(formatted)
 
 	return nil
 }

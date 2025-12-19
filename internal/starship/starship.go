@@ -6,14 +6,10 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/charmbracelet/lipgloss"
+	"github.com/hanthor/bluefin-cli/internal/tui"
 )
 
 var (
-	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Bold(true)
-	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Bold(true)
-	infoStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
-
 	// For testing
 	execCommand = exec.Command
 	runCommand  = func(cmd *exec.Cmd) error {
@@ -26,11 +22,11 @@ var (
 func Install() error {
 	// Check if already installed
 	if _, err := lookPath("starship"); err == nil {
-		fmt.Println(successStyle.Render("✓ Starship is already installed"))
+		fmt.Println(tui.SuccessStyle.Render("✓ Starship is already installed"))
 		return nil
 	}
 
-	fmt.Println(infoStyle.Render("⬇️  Installing Starship..."))
+	fmt.Println(tui.InfoStyle.Render("⬇️  Installing Starship..."))
 
 	// Use Homebrew if available
 	if _, err := lookPath("brew"); err == nil {
@@ -42,7 +38,7 @@ func Install() error {
 			return fmt.Errorf("brew install failed: %w", err)
 		}
 
-		fmt.Println(successStyle.Render("✓ Starship installed successfully!"))
+		fmt.Println(tui.SuccessStyle.Render("✓ Starship installed successfully!"))
 		return nil
 	}
 
@@ -55,7 +51,7 @@ func Install() error {
 		return fmt.Errorf("installation failed: %w", err)
 	}
 
-	fmt.Println(successStyle.Render("✓ Starship installed successfully!"))
+	fmt.Println(tui.SuccessStyle.Render("✓ Starship installed successfully!"))
 	return nil
 }
 

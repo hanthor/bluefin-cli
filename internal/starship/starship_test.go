@@ -3,7 +3,6 @@ package starship
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 )

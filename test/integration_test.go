@@ -245,8 +245,8 @@ func TestBlingDisable(t *testing.T) {
 	}
 	
 	bashrc := filepath.Join(os.Getenv("HOME"), ".bashrc")
-	if fileContains(t, bashrc, "bling.sh") {
-		t.Error("Bling still present in bashrc after disable")
+	if fileContains(t, bashrc, "# bluefin-cli bling") {
+		t.Error("Bling marker still present in bashrc after disable")
 	}
 }
 

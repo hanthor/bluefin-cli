@@ -6,7 +6,7 @@ default:
 
 deps:
     @echo "Installing dependencies..."
-    @brew install go
+    @brew install go gum zoxide atuin starship eza bat ugrep 
 
 # Run Go tests (canonical test suite)
 test: build-container build
@@ -44,6 +44,15 @@ unit-test: build-container
         -w /workspace \
         bluefin-cli-dev \
         go test ./... -v
+
+motd-test: build-container build
+    @echo "Running motd tests in container..."
+    podman run --rm \
+        -v "$(pwd):/workspace:Z" \
+        -w /workspace \
+        bluefin-cli-dev \
+        go test -v ./internal/motd/...
+    @echo "Motd tests completed!"
 
 # Build the binary locally
 build:

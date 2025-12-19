@@ -11,8 +11,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// installTools iterates through the config and installs enabled tools
-func installTools(cfg *Config) {
+// InstallTools iterates through the config and installs enabled tools
+func InstallTools(cfg *Config) {
 	tools := []struct {
 		enabled bool
 		binary  string
@@ -99,7 +99,7 @@ func Toggle(shell string, enable bool) error {
 		}
 
 		if enable {
-			installTools(cfg)
+			InstallTools(cfg)
 		}
 
 		sourceLine = fmt.Sprintf(`if [ -n "${BASH_VERSION:-}" ]; then . %s; fi`, blingPath)
@@ -119,7 +119,7 @@ func Toggle(shell string, enable bool) error {
 		}
 
 		if enable {
-			installTools(cfg)
+			InstallTools(cfg)
 		}
 
 		sourceLine = fmt.Sprintf(`test -f %s && source %s`, blingPath, blingPath)
@@ -139,7 +139,7 @@ func Toggle(shell string, enable bool) error {
 		}
 
 		if enable {
-			installTools(cfg)
+			InstallTools(cfg)
 		}
 
 		sourceLine = fmt.Sprintf("source %s", blingPath)

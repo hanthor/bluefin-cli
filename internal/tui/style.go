@@ -1,0 +1,66 @@
+package tui
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"runtime"
+
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/hanthor/bluefin-cli/internal/tui/theme"
+)
+
+var (
+	// Current Theme
+	CurrentTheme = theme.DefaultTheme
+
+	// Styles
+	TitleStyle = lipgloss.NewStyle().
+			Foreground(CurrentTheme.PrimaryBorder).
+			Bold(true).
+			Padding(0, 1).
+			Border(lipgloss.RoundedBorder(), false, false, true, false).
+			BorderForeground(CurrentTheme.FaintBorder)
+
+	SubtitleStyle = lipgloss.NewStyle().
+			Foreground(CurrentTheme.SecondaryText).
+			Italic(true).
+			PaddingLeft(1)
+
+	SuccessStyle = lipgloss.NewStyle().Foreground(CurrentTheme.SuccessText).Bold(true)
+	ErrorStyle   = lipgloss.NewStyle().Foreground(CurrentTheme.ErrorText).Bold(true)
+	WarningStyle = lipgloss.NewStyle().Foreground(CurrentTheme.WarningText)
+	InfoStyle    = lipgloss.NewStyle().Foreground(CurrentTheme.InfoText)
+
+	// Theme
+	AppTheme = huh.ThemeCatppuccin()
+)
+
+// ClearScreen clears the terminal screen
+func ClearScreen() {
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/c", "cls")
+	} else {
+		cmd = exec.Command("clear")
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Run()
+}
+
+// RenderHeader renders a consistent header for menus
+func RenderHeader(title string, subtitle string) {
+	fmt.Println(TitleStyle.Render(title))
+	if subtitle != "" {
+		fmt.Println(SubtitleStyle.Render(subtitle))
+	}
+	fmt.Println()
+}
+
+// Pause waits for user input before continuing
+func Pause() {
+	fmt.Println()
+	fmt.Println(lipgloss.NewStyle().Faint(true).Render("Press Enter to continue..."))
+	fmt.Scanln()
+}

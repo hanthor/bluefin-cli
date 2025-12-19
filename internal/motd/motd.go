@@ -11,13 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
-)
-
-var (
-	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Bold(true)
-	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Bold(true)
-	infoStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
+	"github.com/hanthor/bluefin-cli/internal/tui"
 )
 
 const motdMarker = "# bluefin-cli motd"
@@ -82,7 +76,7 @@ func Toggle(target string, enable bool) error {
 
 	for _, shell := range shells {
 		if err := toggleForShell(shell, enable); err != nil {
-			fmt.Println(errorStyle.Render(fmt.Sprintf("✗ Error toggling MOTD for %s: %v", shell, err)))
+			fmt.Println(tui.ErrorStyle.Render(fmt.Sprintf("✗ Error toggling MOTD for %s: %v", shell, err)))
 		}
 	}
 
@@ -139,7 +133,7 @@ func toggleForShell(shell string, enable bool) error {
 
 	if enable {
 		if hasMarker {
-			fmt.Println(infoStyle.Render(fmt.Sprintf("ℹ MOTD already enabled for %s", shell)))
+			fmt.Println(tui.InfoStyle.Render(fmt.Sprintf("ℹ MOTD already enabled for %s", shell)))
 			return nil
 		}
 
@@ -148,10 +142,10 @@ func toggleForShell(shell string, enable bool) error {
 			return err
 		}
 
-		fmt.Println(successStyle.Render(fmt.Sprintf("✓ MOTD enabled for %s", shell)))
+		fmt.Println(tui.SuccessStyle.Render(fmt.Sprintf("✓ MOTD enabled for %s", shell)))
 	} else {
 		if !hasMarker {
-			fmt.Println(infoStyle.Render(fmt.Sprintf("ℹ MOTD already disabled for %s", shell)))
+			fmt.Println(tui.InfoStyle.Render(fmt.Sprintf("ℹ MOTD already disabled for %s", shell)))
 			return nil
 		}
 
@@ -176,7 +170,7 @@ func toggleForShell(shell string, enable bool) error {
 			return err
 		}
 
-		fmt.Println(successStyle.Render(fmt.Sprintf("✓ MOTD disabled for %s", shell)))
+		fmt.Println(tui.SuccessStyle.Render(fmt.Sprintf("✓ MOTD disabled for %s", shell)))
 	}
 
 	return nil
@@ -238,7 +232,7 @@ func SetTheme(theme string) error {
 		return err
 	}
 
-	fmt.Println(successStyle.Render(fmt.Sprintf("✓ MOTD theme set to: %s", theme)))
+	fmt.Println(tui.SuccessStyle.Render(fmt.Sprintf("✓ MOTD theme set to: %s", theme)))
 	return nil
 }
 
