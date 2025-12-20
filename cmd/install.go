@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 	"github.com/hanthor/bluefin-cli/internal/install"
+	"github.com/hanthor/bluefin-cli/internal/tui"
 )
 
 var installCmd = &cobra.Command{
@@ -91,9 +92,12 @@ func runBundlesMenu() error {
 				Options(opts...).
 				Value(&selectedBundles),
 		),
-	)
+	).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
 
 	if err := form.Run(); err != nil {
+		if err == huh.ErrUserAborted {
+			return nil
+		}
 		return fmt.Errorf("form error: %w", err)
 	}
 
@@ -131,8 +135,11 @@ func runWallpapersMenu() error {
 				Options(opts...).
 				Value(&selected),
 		),
-	)
+	).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
 	if err := form.Run(); err != nil {
+		if err == huh.ErrUserAborted {
+			return nil
+		}
 		return fmt.Errorf("form error: %w", err)
 	}
 	if len(selected) == 0 {

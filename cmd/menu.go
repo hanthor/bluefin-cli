@@ -28,19 +28,19 @@ var menuCmd = &cobra.Command{
 
 			var shellLabel string
 			if hasShell {
-				shellLabel = "Shell Experience (Enabled)"
+				shellLabel = "Bluefin Shell (Enabled)"
 			} else {
-				shellLabel = "Shell Experience (Disabled)"
+				shellLabel = "Bluefin Shell (Disabled)"
 			}
 
 			// Build options dynamically, include OS scripts if available
 			opts := []huh.Option[string]{
 				huh.NewOption("📊 Status", "status"),
-				huh.NewOption(shellLabel, "shell"),
-				huh.NewOption("📰 MOTD", "motd"),
-				huh.NewOption("📦 Install Tools", "bundles"),
-				huh.NewOption("🖼  Wallpapers", "wallpapers"),
-				huh.NewOption("🚀 Starship Theme", "starship"),
+				huh.NewOption(shellLabel+" ❯", "shell"),
+				huh.NewOption("📰 MOTD ❯", "motd"),
+				huh.NewOption("📦 Install Tools ❯", "bundles"),
+				huh.NewOption("🖼  Wallpapers ❯", "wallpapers"),
+				huh.NewOption("🚀 Starship Theme ❯", "starship"),
 			}
 			opts = append(opts, huh.NewOption("Exit", "exit"))
 
@@ -54,7 +54,7 @@ var menuCmd = &cobra.Command{
 				),
 			).WithTheme(tui.AppTheme)
 
-			if err := form.Run(); err != nil {
+			if err := form.WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap()).Run(); err != nil {
 				// ESC pressed on main menu - exit cleanly
 				return nil
 			}

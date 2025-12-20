@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 	"github.com/hanthor/bluefin-cli/internal/motd"
+	"github.com/hanthor/bluefin-cli/internal/tui"
 )
 
 var motdCmd = &cobra.Command{
@@ -70,11 +71,14 @@ var motdConfigCmd = &cobra.Command{
 					).
 					Value(&selectedTheme),
 			),
-		)
+		).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
 
-		if err := form.Run(); err != nil {
-			return fmt.Errorf("form error: %w", err)
+	if err := form.Run(); err != nil {
+		if err == huh.ErrUserAborted {
+			return nil
 		}
+		return fmt.Errorf("form error: %w", err)
+	}
 
 		return motd.SetTheme(selectedTheme)
 	},
@@ -96,12 +100,13 @@ func runMotdMenu() error {
 					Title("MOTD – What do you want to do?").
 					Options(
 						huh.NewOption("Show MOTD", "show"),
-						huh.NewOption("Toggle for shells", "toggle"),
+						huh.NewOption("Toggle for shells ❯", "toggle"),
 					).
 					Value(&action),
 			),
-		).Run(); err != nil {
-			return nil // Ctrl+C pressed - go back to main menu
+		).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap()).Run(); err != nil {
+			// Abort or ctrl+c -> go back/exit
+			return nil
 		}
 
 		if action == "show" {
@@ -140,8 +145,9 @@ func runMotdMenu() error {
 					).
 					Value(&selected),
 			),
-		).Run(); err != nil {
-			continue // Ctrl+C pressed - show MOTD menu again
+		).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap()).Run(); err != nil {
+			// Abort -> go back to motd menu
+			continue
 		}
 
 		// Build map of final selections

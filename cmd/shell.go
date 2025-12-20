@@ -73,13 +73,13 @@ func runShellMenu() error {
 					Title("Choose an option").
 					Options(
 						huh.NewOption(toggleLabel, "toggle_current"),
-						huh.NewOption("Configure Components", "components"),
-						huh.NewOption("Enable/Disable for other shells", "shells"),
+						huh.NewOption("Configure Components ❯", "components"),
+						huh.NewOption("Enable/Disable for other shells ❯", "shells"),
 						huh.NewOption("Exit to Main Menu", "exit"),
 					).
 					Value(&action),
 			),
-		).WithTheme(tui.AppTheme).Run(); err != nil {
+		).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap()).Run(); err != nil {
 			return nil
 		}
 
@@ -136,7 +136,7 @@ func shellShellsMenu() error {
 				).
 				Value(&selected),
 		),
-	).WithTheme(tui.AppTheme).Run(); err != nil {
+	).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap()).Run(); err != nil {
 		return nil // Interrupted - go back to main menu
 	}
 
@@ -196,9 +196,12 @@ func configureShellTools() error {
 				).
 				Value(&selected),
 		),
-	).WithTheme(tui.AppTheme)
+	).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
 
 	if err := form.Run(); err != nil {
+		if err == huh.ErrUserAborted {
+			return nil
+		}
 		return fmt.Errorf("form error: %w", err)
 	}
 

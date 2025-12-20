@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"runtime"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hanthor/bluefin-cli/internal/tui/theme"
@@ -36,6 +37,31 @@ var (
 	// Theme
 	AppTheme = huh.ThemeCatppuccin()
 )
+
+// MenuKeyMap returns a keymap that includes standard navigation + Left/Backspace for abort (Back)
+func MenuKeyMap() *huh.KeyMap {
+	km := huh.NewDefaultKeyMap()
+
+	// Global Quit/Back
+	km.Quit = key.NewBinding(
+		key.WithKeys("esc", "ctrl+c", "left", "backspace"),
+		key.WithHelp("esc / ←", "back"),
+	)
+
+	// Select
+	km.Select.Submit = key.NewBinding(
+		key.WithKeys("enter", "right"),
+		key.WithHelp("enter / →", "select"),
+	)
+	
+	// MultiSelect
+	km.MultiSelect.Submit = key.NewBinding(
+		key.WithKeys("enter"),
+		key.WithHelp("enter", "confirm"),
+	)
+	
+	return km
+}
 
 // ClearScreen clears the terminal screen
 func ClearScreen() {
