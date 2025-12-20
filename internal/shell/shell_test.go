@@ -49,7 +49,7 @@ func TestInit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Init(tt.shell)
+			got, err := Init(tt.shell, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Init() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -100,7 +100,7 @@ func TestCheckDependencies(t *testing.T) {
 		t.Error("Expected non-nil dependencies map")
 	}
 
-	expectedTools := []string{"eza", "bat", "zoxide", "atuin", "starship", "ugrep"}
+	expectedTools := []string{"eza", "bat", "zoxide", "atuin", "starship", "ug"}
 	for _, tool := range expectedTools {
 		if _, exists := deps[tool]; !exists {
 			t.Errorf("Expected tool %s to be in dependencies map", tool)

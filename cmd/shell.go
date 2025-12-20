@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 	"path/filepath"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
@@ -51,14 +52,12 @@ func runShellMenu() error {
 		tui.ClearScreen()
 		tui.RenderHeader("Bluefin CLI", "Shell Configuration")
 
-		// Detect current shell
 		currentShellPath := os.Getenv("SHELL")
 		currentShell := filepath.Base(currentShellPath)
 		if currentShell == "" {
 			currentShell = "bash" // fallback
 		}
 
-		// Check status for current shell
 		status := shell.CheckStatus()
 		isEnabled := status[currentShell]
 		toggleLabel := fmt.Sprintf("Enable for current shell (%s)", currentShell)
@@ -107,7 +106,6 @@ func shellShellsMenu() error {
 	tui.ClearScreen()
 	tui.RenderHeader("Bluefin CLI", "Shell > Shells")
 
-	// Check current status
 	status := shell.CheckStatus()
 	
 	// Pre-select shells that currently have bling enabled
@@ -172,28 +170,25 @@ func configureShellTools() error {
 	}
 
 	var selected []string
-	if cfg.Eza { selected = append(selected, "eza") }
-	if cfg.Ugrep { selected = append(selected, "ugrep") }
-	if cfg.Bat { selected = append(selected, "bat") }
-	if cfg.Atuin { selected = append(selected, "atuin") }
-	if cfg.Starship { selected = append(selected, "starship") }
-	if cfg.Zoxide { selected = append(selected, "zoxide") }
-	if cfg.Uutils { selected = append(selected, "uutils") }
+	for _, tool := range shell.Tools {
+		if cfg.IsEnabled(tool.Name) {
+			selected = append(selected, tool.Name)
+		}
+	}
+	
+	// Build options dynamically
+	var options []huh.Option[string]
+	for _, tool := range shell.Tools {
+		label := fmt.Sprintf("%s (%s)", tool.Name, tool.Description)
+		options = append(options, huh.NewOption(label, tool.Name))
+	}
 
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewMultiSelect[string]().
 				Title("Select tools to enable").
 				Description("Uncheck to disable specific tools").
-				Options(
-					huh.NewOption("eza (Modern ls)", "eza"),
-					huh.NewOption("ugrep (Faster grep)", "ugrep"),
-					huh.NewOption("bat (Better cat)", "bat"),
-					huh.NewOption("atuin (Shell history)", "atuin"),
-					huh.NewOption("starship (Prompt)", "starship"),
-					huh.NewOption("zoxide (Smarter cd)", "zoxide"),
-					huh.NewOption("uutils (Rust Coreutils)", "uutils"),
-				).
+				Options(options...).
 				Value(&selected),
 		),
 	).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
@@ -206,17 +201,19 @@ func configureShellTools() error {
 	}
 
 	// Update config
-	newCfg := &shell.Config{}
-	for _, tool := range selected {
-		switch tool {
-		case "eza": newCfg.Eza = true
-		case "ugrep": newCfg.Ugrep = true
-		case "bat": newCfg.Bat = true
-		case "atuin": newCfg.Atuin = true
-		case "starship": newCfg.Starship = true
-		case "zoxide": newCfg.Zoxide = true
-		case "uutils": newCfg.Uutils = true
-		}
+	newCfg := shell.DefaultConfig() // Start with defaults
+	// First disable everything, then enable selected? 
+	// Or just update based on selection.
+	// Since Config is a map, we can iterate Tools and set based on presence in selected.
+	
+	// Create a set for selected tools
+	selectedSet := make(map[string]bool)
+	for _, s := range selected {
+		selectedSet[s] = true
+	}
+
+	for _, tool := range shell.Tools {
+		newCfg.SetEnabled(tool.Name, selectedSet[tool.Name])
 	}
 
 	if err := shell.SaveConfig(newCfg); err != nil {
@@ -232,6 +229,14 @@ func configureShellTools() error {
 }
 
 func init() {
+	// Generate dynamic long description
+	var sb strings.Builder
+	sb.WriteString("Enable or disable shell experience enhancements (modern aliases and tool initialization).\n\nThe Shell Experience provides:\n")
+	for _, tool := range shell.Tools {
+		sb.WriteString(fmt.Sprintf("  - %s: %s\n", tool.Name, tool.Description))
+	}
+	shellCmd.Long = sb.String()
+
 	rootCmd.AddCommand(shellCmd)
 	shellCmd.AddCommand(shellConfigCmd)
 }

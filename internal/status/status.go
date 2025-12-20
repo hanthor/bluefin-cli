@@ -69,16 +69,15 @@ func Show() error {
 	var rightCol string
 
 	// Tool dependencies
-	rightCol += labelStyle.Render("Required Tools:") + "\n"
+	rightCol += labelStyle.Render("Managed Tools:") + "\n"
 	deps := shell.CheckDependencies()
-	tools := []string{"eza", "bat", "zoxide", "atuin", "starship", "ugrep"}
 	
-	for _, tool := range tools {
+	for _, tool := range shell.Tools {
 		status := "not installed"
 		style := disabledStyle
 		symbol := "✗"
 		
-		if deps[tool] {
+		if deps[tool.Binary] {
 			status = "installed"
 			style = enabledStyle
 			symbol = "✓"
@@ -86,29 +85,7 @@ func Show() error {
 
 		rightCol += fmt.Sprintf("  %s %s: %s\n", 
 			style.Render(symbol),
-			tool,
-			style.Render(status))
-	}
-	rightCol += "\n"
-
-	// Additional tools
-	rightCol += labelStyle.Render("Optional Tools:") + "\n"
-	optionalTools := []string{"glow", "fastfetch", "gh", "jq", "fzf"}
-	for _, tool := range optionalTools {
-		_, err := exec.LookPath(tool)
-		status := "not installed"
-		style := disabledStyle
-		symbol := "✗"
-		
-		if err == nil {
-			status = "installed"
-			style = enabledStyle
-			symbol = "✓"
-		}
-
-		rightCol += fmt.Sprintf("  %s %s: %s\n", 
-			style.Render(symbol),
-			tool,
+			tool.Name,
 			style.Render(status))
 	}
 	rightCol += "\n"

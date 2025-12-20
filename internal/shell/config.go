@@ -5,32 +5,50 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/hanthor/bluefin-cli/internal/env"
 )
 
 // Config holds the configuration for shell experience tools
-type Config struct {
-	Eza      bool `json:"eza"`
-	Ugrep    bool `json:"ugrep"`
-	Bat      bool `json:"bat"`
-	Atuin    bool `json:"atuin"`
-	Starship bool `json:"starship"`
-	Zoxide   bool `json:"zoxide"`
-	Uutils   bool `json:"uutils"`
+// Config holds the configuration for shell experience tools
+type Config map[string]bool
+
+// IsEnabled returns true if the tool with the given name is enabled in the config
+func (c Config) IsEnabled(toolName string) bool {
+	// We use lowercased tool names as keys
+	key := strings.ToLower(toolName)
+	if enabled, ok := c[key]; ok {
+		return enabled
+	}
+	// Fallback to default from Tools definition if key missing (though DefaultConfig should populate it)
+	// Or maybe false? 
+	// Ideally Config should be fully populated. But if we load an old config that misses a new tool, 
+	// we should fallback to that tool's default.
+	for _, t := range Tools {
+		if t.Name == toolName {
+			return t.Default
+		}
+	}
+	return false
+}
+
+// SetEnabled sets the enabled status of a tool
+func (c Config) SetEnabled(toolName string, enabled bool) {
+	key := strings.ToLower(toolName)
+	c[key] = enabled
 }
 
 // DefaultConfig returns a configuration with all tools enabled
 func DefaultConfig() *Config {
-	return &Config{
-		Eza:      true,
-		Ugrep:    true,
-		Bat:      true,
-		Atuin:    true,
-		Starship: true,
-		Zoxide:   true,
-		Uutils:   true, // Default to true (opt-out)
+	cfg := make(Config)
+	
+	for _, tool := range Tools {
+		// Use lowercased name as key for JSON compatibility
+		cfg[strings.ToLower(tool.Name)] = tool.Default
 	}
+	
+	return &cfg
 }
 
 // LoadConfig reads the configuration from file or returns default if not found

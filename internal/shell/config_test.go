@@ -13,12 +13,12 @@ func TestConfigData(t *testing.T) {
 	
 	// Test Default Config
 	cfg := DefaultConfig()
-	if !cfg.Eza {
+	if !cfg.IsEnabled("Eza") {
 		t.Error("Default config should have Eza enabled")
 	}
 
 	// Test Save and Load
-	cfg.Eza = false
+	cfg.SetEnabled("Eza", false)
 	if err := SaveConfig(cfg); err != nil {
 		t.Fatalf("Failed to save config: %v", err)
 	}
@@ -28,10 +28,10 @@ func TestConfigData(t *testing.T) {
 		t.Fatalf("Failed to load config: %v", err)
 	}
 
-	if loadedCfg.Eza {
+	if loadedCfg.IsEnabled("Eza") {
 		t.Error("Expected Eza to be disabled after save")
 	}
-	if !loadedCfg.Starship {
+	if !loadedCfg.IsEnabled("Starship") {
 		t.Error("Expected Starship to be enabled (unchanged)")
 	}
 

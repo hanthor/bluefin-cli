@@ -13,24 +13,10 @@ import (
 
 // InstallTools iterates through the config and installs enabled tools
 func InstallTools(cfg *Config) {
-	tools := []struct {
-		enabled bool
-		binary  string
-		pkg     string
-	}{
-		{cfg.Eza, "eza", "eza"},
-		{cfg.Ugrep, "ug", "ugrep"},
-		{cfg.Bat, "bat", "bat"},
-		{cfg.Atuin, "atuin", "atuin"},
-		{cfg.Starship, "starship", "starship"},
-		{cfg.Zoxide, "zoxide", "zoxide"},
-		{cfg.Uutils, "uutils", "uutils-coreutils"},
-	}
-
-	for _, t := range tools {
-		if t.enabled {
-			if err := ensureTool(t.binary, t.pkg); err != nil {
-				fmt.Println(errorStyle.Render(fmt.Sprintf("Warning: Failed to install %s: %v", t.pkg, err)))
+	for _, tool := range Tools {
+		if cfg.IsEnabled(tool.Name) {
+			if err := ensureTool(tool.Binary, tool.Pkg); err != nil {
+				fmt.Println(errorStyle.Render(fmt.Sprintf("Warning: Failed to install %s: %v", tool.Pkg, err)))
 			}
 		}
 	}
@@ -169,32 +155,23 @@ func Toggle(shell string, enable bool) error {
 }
 
 // Init returns the shell initialization script
-func Init(shell string) (string, error) {
-	config, err := LoadConfig()
-	if err != nil {
-		// Fallback to default if config can't be loaded (e.g. permission error, though unlikely)
+func Init(shell string, config *Config) (string, error) {
+	if config == nil {
+		// Should not happen if caller is correct, but fail-safe
 		config = DefaultConfig()
 	}
 
 	var sb strings.Builder
 
 	// 1. Generate Environment Variables
-	if shell == "fish" {
-		fmt.Fprintf(&sb, "set -gx BLUEFIN_SHELL_ENABLE_EZA %d\n", boolToInt(config.Eza))
-		fmt.Fprintf(&sb, "set -gx BLUEFIN_SHELL_ENABLE_UGREP %d\n", boolToInt(config.Ugrep))
-		fmt.Fprintf(&sb, "set -gx BLUEFIN_SHELL_ENABLE_BAT %d\n", boolToInt(config.Bat))
-		fmt.Fprintf(&sb, "set -gx BLUEFIN_SHELL_ENABLE_ATUIN %d\n", boolToInt(config.Atuin))
-		fmt.Fprintf(&sb, "set -gx BLUEFIN_SHELL_ENABLE_STARSHIP %d\n", boolToInt(config.Starship))
-		fmt.Fprintf(&sb, "set -gx BLUEFIN_SHELL_ENABLE_ZOXIDE %d\n", boolToInt(config.Zoxide))
-		fmt.Fprintf(&sb, "set -gx BLUEFIN_SHELL_ENABLE_UUTILS %d\n", boolToInt(config.Uutils))
-	} else {
-		fmt.Fprintf(&sb, "export BLUEFIN_SHELL_ENABLE_EZA=%d\n", boolToInt(config.Eza))
-		fmt.Fprintf(&sb, "export BLUEFIN_SHELL_ENABLE_UGREP=%d\n", boolToInt(config.Ugrep))
-		fmt.Fprintf(&sb, "export BLUEFIN_SHELL_ENABLE_BAT=%d\n", boolToInt(config.Bat))
-		fmt.Fprintf(&sb, "export BLUEFIN_SHELL_ENABLE_ATUIN=%d\n", boolToInt(config.Atuin))
-		fmt.Fprintf(&sb, "export BLUEFIN_SHELL_ENABLE_STARSHIP=%d\n", boolToInt(config.Starship))
-		fmt.Fprintf(&sb, "export BLUEFIN_SHELL_ENABLE_ZOXIDE=%d\n", boolToInt(config.Zoxide))
-		fmt.Fprintf(&sb, "export BLUEFIN_SHELL_ENABLE_UUTILS=%d\n", boolToInt(config.Uutils))
+	for _, tool := range Tools {
+		enabled := config.IsEnabled(tool.Name)
+
+		if shell == "fish" {
+			fmt.Fprintf(&sb, "set -gx %s %d\n", tool.GetEnvVar(), boolToInt(enabled))
+		} else {
+			fmt.Fprintf(&sb, "export %s=%d\n", tool.GetEnvVar(), boolToInt(enabled))
+		}
 	}
 	
 	sb.WriteString("\n")
@@ -242,12 +219,11 @@ func CheckStatus() map[string]bool {
 
 // CheckDependencies verifies required tools are installed
 func CheckDependencies() map[string]bool {
-	tools := []string{"eza", "bat", "zoxide", "atuin", "starship", "ugrep"}
 	status := make(map[string]bool)
 
-	for _, tool := range tools {
-		_, err := exec.LookPath(tool)
-		status[tool] = err == nil
+	for _, tool := range Tools {
+		_, err := exec.LookPath(tool.Binary)
+		status[tool.Binary] = err == nil
 	}
 
 	return status

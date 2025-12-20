@@ -2,9 +2,16 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/hanthor/bluefin-cli/internal/shell"
+)
+
+var (
+	// Flags are now dynamic, stored in a map
+	toolFlags = make(map[string]*bool)
+	motdFlag  bool = true // Default to true matching current behavior
 )
 
 var initCmd = &cobra.Command{
@@ -27,8 +34,26 @@ Fish (~/.config/fish/config.fish):
 	RunE: func(cmd *cobra.Command, args []string) error {
 		shellName := args[0]
 		
+		// Load existing config or default
+		config, err := shell.LoadConfig()
+		if err != nil {
+			// If loading fails, just use default, don't break init
+			config = shell.DefaultConfig()
+		}
+
+		// Override with flags if explicitly set
+		// Since we generated flags dynamically, we can iterate over Tools to check them
+		for _, tool := range shell.Tools {
+			flagName := strings.ToLower(tool.Name)
+			if cmd.Flags().Changed(flagName) {
+				if val, ok := toolFlags[flagName]; ok {
+					config.SetEnabled(tool.Name, *val)
+				}
+			}
+		}
+
 		// Generate bling/shell script
-		script, err := shell.Init(shellName)
+		script, err := shell.Init(shellName, config)
 		if err != nil {
 			return err
 		}
@@ -37,22 +62,23 @@ Fish (~/.config/fish/config.fish):
 		fmt.Println(script)
 		fmt.Println()
 
-		// Add MOTD hook
-		// We append this here because it's simple enough not to need a separate Init function in motd package
-		switch shellName {
-		case "bash", "zsh":
-			// Only run MOTD if interactive
-			fmt.Println(`# bluefin-cli motd hook
+		// Add MOTD hook if enabled
+		if motdFlag {
+			switch shellName {
+			case "bash", "zsh":
+				// Only run MOTD if interactive
+				fmt.Println(`# bluefin-cli motd hook
 if [ -n "$PS1" ] && [ -t 1 ]; then
     bluefin-cli motd show
 fi`)
-		case "fish":
-			fmt.Println(`# bluefin-cli motd hook
+			case "fish":
+				fmt.Println(`# bluefin-cli motd hook
 if status is-interactive
     bluefin-cli motd show
 end`)
-		default:
-			return fmt.Errorf("unsupported shell: %s", shellName)
+			default:
+				return fmt.Errorf("unsupported shell: %s", shellName)
+			}
 		}
 
 		return nil
@@ -61,4 +87,12 @@ end`)
 
 func init() {
 	rootCmd.AddCommand(initCmd)
+	
+	// Dynamically generate flags for each tool
+	for _, tool := range shell.Tools {
+		flagName := strings.ToLower(tool.Name)
+		toolFlags[flagName] = initCmd.Flags().Bool(flagName, tool.Default, fmt.Sprintf("Enable %s", tool.Name))
+	}
+
+	initCmd.Flags().BoolVar(&motdFlag, "motd", true, "Enable motd")
 }
