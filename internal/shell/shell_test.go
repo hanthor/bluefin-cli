@@ -100,10 +100,9 @@ func TestCheckDependencies(t *testing.T) {
 		t.Error("Expected non-nil dependencies map")
 	}
 
-	expectedTools := []string{"eza", "bat", "zoxide", "atuin", "starship", "ug"}
-	for _, tool := range expectedTools {
-		if _, exists := deps[tool]; !exists {
-			t.Errorf("Expected tool %s to be in dependencies map", tool)
+	for _, tool := range Tools {
+		if _, exists := deps[tool.Binary]; !exists {
+			t.Errorf("Expected tool %s to be in dependencies map", tool.Binary)
 		}
 	}
 }

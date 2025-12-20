@@ -15,6 +15,9 @@ BLING_SOURCED=1
 : "${BLUEFIN_SHELL_ENABLE_UUTILSFINDUTILS:=1}"
 : "${BLUEFIN_SHELL_ENABLE_UUTILSDIFFUTILS:=1}"
 
+# Default disabled tools
+: "${BLUEFIN_SHELL_ENABLE_CARAPACE:=0}"
+
 # eza
 # ls aliases
 if [ "$BLUEFIN_SHELL_ENABLE_EZA" -eq 1 ] && [ "$(command -v eza)" ]; then
@@ -67,5 +70,8 @@ fi
 [ "$BLUEFIN_SHELL_ENABLE_STARSHIP" -eq 1 ] && [ "$(command -v starship)" ] && eval "$(starship init ${BLING_SHELL})"
 
 [ "$BLUEFIN_SHELL_ENABLE_ZOXIDE" -eq 1 ] && [ "$(command -v zoxide)" ] && eval "$(zoxide init ${BLING_SHELL})"
+
+[ "$BLUEFIN_SHELL_ENABLE_CARAPACE" -eq 1 ] && [ "$(command -v carapace)" ] && eval "$(carapace _carapace ${BLING_SHELL})"
+
 
 

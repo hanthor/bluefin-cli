@@ -30,4 +30,5 @@ var Tools = []Tool{
 	{Name: "UutilsCoreutils", Description: "Rust rewrite of GNU coreutils", Binary: "uutils", Pkg: "uutils-coreutils", Default: true},
 	{Name: "UutilsFindutils", Description: "Rust rewrite of GNU findutils", Binary: "ufind", Pkg: "uutils-findutils", Default: true},
 	{Name: "UutilsDiffutils", Description: "Rust rewrite of GNU diffutils", Binary: "udiff", Pkg: "uutils-diffutils", Default: true},
+	{Name: "Carapace", Description: "Multi-shell multi-command argument completer", Binary: "carapace", Pkg: "carapace", Default: false},
 }

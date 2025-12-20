@@ -31,6 +31,9 @@ end
 if not set -q BLUEFIN_SHELL_ENABLE_UUTILSDIFFUTILS
     set BLUEFIN_SHELL_ENABLE_UUTILSDIFFUTILS 1
 end
+if not set -q BLUEFIN_SHELL_ENABLE_CARAPACE
+    set BLUEFIN_SHELL_ENABLE_CARAPACE 0
+end
 
 # ls aliases
 if test "$BLUEFIN_SHELL_ENABLE_EZA" -eq 1; and type -q eza
@@ -80,5 +83,10 @@ if status is-interactive
 
     if test "$BLUEFIN_SHELL_ENABLE_ZOXIDE" -eq 1; and type -q zoxide
         zoxide init fish | source
+    end
+
+    if test "$BLUEFIN_SHELL_ENABLE_CARAPACE" -eq 1; and type -q carapace
+        set -x CARAPACE_BRIDGES 'zsh,fish,bash,inshellisense'
+        carapace _carapace | source
     end
 end
