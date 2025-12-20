@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hanthor/bluefin-cli/internal/env"
 	"github.com/hanthor/bluefin-cli/internal/tui"
 )
 
@@ -39,10 +40,11 @@ var defaultTemplate = `# 󱍢 Welcome to Bluefin CLI
 
 |  Command | Description |
 | ------- | ----------- |
-| ` + "`bluefin-cli bling bash on`" + `  | Enable terminal bling for bash  |
+| ` + "`bluefin-cli shell bash on`" + `  | Enable shell experience for bash  |
 | ` + "`bluefin-cli status`" + ` | Show current configuration |
 | ` + "`bluefin-cli help`" + ` | Show all available commands |
 | ` + "`brew help`" + ` | Manage command line packages |
+| ` + "`brew search <query>`" + ` | Search for packages |
 
 %s
 
@@ -68,129 +70,42 @@ type Config struct {
 }
 
 // Toggle enables or disables MOTD for shells
+// Deprecated: Use 'bluefin-cli init' instead
 func Toggle(target string, enable bool) error {
-	shells := []string{"bash", "zsh", "fish"}
-	if target != "all" {
-		shells = []string{target}
-	}
-
-	for _, shell := range shells {
-		if err := toggleForShell(shell, enable); err != nil {
-			fmt.Println(tui.ErrorStyle.Render(fmt.Sprintf("✗ Error toggling MOTD for %s: %v", shell, err)))
-		}
-	}
-
-	return nil
-}
-
-func toggleForShell(shell string, enable bool) error {
-	var configFile string
-	var motdLine string
-	var linesAfterMarker int
-
-	homeDir := os.Getenv("HOME")
-	motdPath := filepath.Join(homeDir, ".local/share/bluefin-cli/motd")
-
-	// Ensure MOTD is set up
-	if err := setupMOTD(); err != nil {
-		return fmt.Errorf("failed to setup MOTD: %w", err)
-	}
-
-	switch shell {
-	case "bash":
-		configFile = filepath.Join(homeDir, ".bashrc")
-		motdLine = fmt.Sprintf("[ -x %s/bluefin-motd.sh ] && %s/bluefin-motd.sh", motdPath, motdPath)
-		linesAfterMarker = 1
-	case "zsh":
-		configFile = filepath.Join(homeDir, ".zshrc")
-		motdLine = fmt.Sprintf("[ -x %s/bluefin-motd.sh ] && %s/bluefin-motd.sh", motdPath, motdPath)
-		linesAfterMarker = 1
-	case "fish":
-		configFile = filepath.Join(homeDir, ".config/fish/config.fish")
-		motdLine = fmt.Sprintf("if status is-interactive; and test -x %s/bluefin-motd.sh; %s/bluefin-motd.sh; end", motdPath, motdPath)
-		linesAfterMarker = 1
-	default:
-		return fmt.Errorf("unsupported shell: %s", shell)
-	}
-
-	// Ensure config file exists
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		dir := filepath.Dir(configFile)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return err
-		}
-		if err := os.WriteFile(configFile, []byte(""), 0644); err != nil {
-			return err
-		}
-	}
-
-	content, err := os.ReadFile(configFile)
-	if err != nil {
-		return err
-	}
-
-	hasMarker := strings.Contains(string(content), motdMarker)
-
-	if enable {
-		if hasMarker {
-			fmt.Println(tui.InfoStyle.Render(fmt.Sprintf("ℹ MOTD already enabled for %s", shell)))
-			return nil
-		}
-
-		newContent := string(content) + "\n" + motdMarker + "\n" + motdLine + "\n"
-		if err := os.WriteFile(configFile, []byte(newContent), 0644); err != nil {
-			return err
-		}
-
-		fmt.Println(tui.SuccessStyle.Render(fmt.Sprintf("✓ MOTD enabled for %s", shell)))
-	} else {
-		if !hasMarker {
-			fmt.Println(tui.InfoStyle.Render(fmt.Sprintf("ℹ MOTD already disabled for %s", shell)))
-			return nil
-		}
-
-		lines := strings.Split(string(content), "\n")
-		var newLines []string
-		skipLines := 0
-
-		for _, line := range lines {
-			if skipLines > 0 {
-				skipLines--
-				continue
-			}
-			if strings.Contains(line, motdMarker) {
-				skipLines = linesAfterMarker
-				continue
-			}
-			newLines = append(newLines, line)
-		}
-
-		newContent := strings.Join(newLines, "\n")
-		if err := os.WriteFile(configFile, []byte(newContent), 0644); err != nil {
-			return err
-		}
-
-		fmt.Println(tui.SuccessStyle.Render(fmt.Sprintf("✓ MOTD disabled for %s", shell)))
-	}
-
+	fmt.Println(tui.InfoStyle.Render("ℹ Note: shell integration is now handled via 'bluefin-cli init'"))
+	
+	// For backward compatibility cleanup, we could implemented removal here, 
+	// but for now, we just inform the user.
 	return nil
 }
 
 // Show displays the MOTD
 func Show() error {
-	homeDir := os.Getenv("HOME")
-	motdPath := filepath.Join(homeDir, ".local/share/bluefin-cli/motd")
-
-	// Ensure MOTD is set up
-	if err := setupMOTD(); err != nil {
-		return err
-	}
-
 	// Get OS info
 	info := getImageInfo()
 
+	// Get configuration (defaults if file missing)
+	config, err := loadConfig()
+	if err != nil {
+		// If error loading config, just use defaults
+		config = DefaultConfig()
+	}
+
 	// Get random tip
-	tip := getRandomTip(filepath.Join(motdPath, "tips"))
+	// First check if user has custom tips in the config directory
+	var tip string
+	if config.TipsDirectory != "" {
+		// Try to find custom tips
+		customTip := getRandomTipFromDir(config.TipsDirectory)
+		if customTip != "" {
+			tip = customTip
+		}
+	}
+	
+	// Fallback to default tips if no custom tip found
+	if tip == "" {
+		tip = getRandomDefaultTip()
+	}
 
 	// Format template
 	content := fmt.Sprintf(defaultTemplate, info.ImageName, info.ImageTag, tip)
@@ -213,21 +128,25 @@ func Show() error {
 
 // SetTheme sets the MOTD theme
 func SetTheme(theme string) error {
-	homeDir := os.Getenv("HOME")
-	configPath := filepath.Join(homeDir, ".local/share/bluefin-cli/motd/motd.json")
+	configDir, err := env.EnsureConfigDir()
+	if err != nil {
+		return err
+	}
+	configPath := filepath.Join(configDir, "motd.json")
 
-	var config Config
-	if data, err := os.ReadFile(configPath); err == nil {
-		json.Unmarshal(data, &config)
+	config, err := loadConfig()
+	if err != nil {
+		config = DefaultConfig()
 	}
 
 	config.DefaultTheme = theme
 
+	// Convert to JSON
 	data, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return err
 	}
-
+	
 	if err := os.WriteFile(configPath, data, 0644); err != nil {
 		return err
 	}
@@ -236,59 +155,36 @@ func SetTheme(theme string) error {
 	return nil
 }
 
-// setupMOTD initializes the MOTD system
-func setupMOTD() error {
-	homeDir := os.Getenv("HOME")
-	motdPath := filepath.Join(homeDir, ".local/share/bluefin-cli/motd")
-	tipsPath := filepath.Join(motdPath, "tips")
-
-	// Create directories
-	if err := os.MkdirAll(tipsPath, 0755); err != nil {
-		return err
+func DefaultConfig() Config {
+	return Config{
+		TipsDirectory:   "",
+		CheckOutdated:   "false",
+		ImageInfoFile:   "", // No longer used?
+		DefaultTheme:    "slate",
+		TemplateFile:    "",
+		ThemesDirectory: "",
 	}
+}
 
-	// Install tips
-	for i, tip := range defaultTips {
-		tipFile := filepath.Join(tipsPath, fmt.Sprintf("%02d-tip.md", i+1))
-		if _, err := os.Stat(tipFile); os.IsNotExist(err) {
-			if err := os.WriteFile(tipFile, []byte(tip), 0644); err != nil {
-				return err
-			}
-		}
+func loadConfig() (Config, error) {
+	configDir, err := env.GetConfigDir()
+	if err != nil {
+		return DefaultConfig(), err
 	}
-
-	// Create MOTD script
-	scriptPath := filepath.Join(motdPath, "bluefin-motd.sh")
-	scriptContent := `#!/usr/bin/env bash
-bluefin-cli motd show
-`
-	if err := os.WriteFile(scriptPath, []byte(scriptContent), 0755); err != nil {
-		return err
+	configPath := filepath.Join(configDir, "motd.json")
+	
+	var config Config
+	
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return DefaultConfig(), err
 	}
-
-	// Create config
-	configPath := filepath.Join(motdPath, "motd.json")
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		config := Config{
-			TipsDirectory:   tipsPath,
-			CheckOutdated:   "false",
-			ImageInfoFile:   filepath.Join(motdPath, "image-info.json"),
-			DefaultTheme:    "slate",
-			TemplateFile:    filepath.Join(motdPath, "template.md"),
-			ThemesDirectory: filepath.Join(motdPath, "themes"),
-		}
-
-		data, err := json.MarshalIndent(config, "", "  ")
-		if err != nil {
-			return err
-		}
-
-		if err := os.WriteFile(configPath, data, 0644); err != nil {
-			return err
-		}
+	
+	if err := json.Unmarshal(data, &config); err != nil {
+		return DefaultConfig(), err
 	}
-
-	return nil
+	
+	return config, nil
 }
 
 func getImageInfo() ImageInfo {
@@ -327,7 +223,7 @@ func getImageInfo() ImageInfo {
 	return info
 }
 
-func getRandomTip(tipsDir string) string {
+func getRandomTipFromDir(tipsDir string) string {
 	files, err := filepath.Glob(filepath.Join(tipsDir, "*.md"))
 	if err != nil || len(files) == 0 {
 		return ""
@@ -344,7 +240,14 @@ func getRandomTip(tipsDir string) string {
 	return "💡 **Tip:** " + string(content)
 }
 
+func getRandomDefaultTip() string {
+	rand.Seed(time.Now().UnixNano())
+	tip := defaultTips[rand.Intn(len(defaultTips))]
+	return "💡 **Tip:** " + tip
+}
+
 // CheckStatus returns whether MOTD is enabled for each shell
+// Now acts as a check for the legacy configuration
 func CheckStatus() map[string]bool {
 	status := make(map[string]bool)
 	shells := []string{"bash", "zsh", "fish"}
@@ -366,7 +269,8 @@ func CheckStatus() map[string]bool {
 			continue
 		}
 
-		status[shell] = strings.Contains(string(content), motdMarker)
+		// Check for new marker (part of shell experience) OR old motd marker
+		status[shell] = strings.Contains(string(content), motdMarker) || strings.Contains(string(content), "# bluefin-cli shell-config")
 	}
 
 	return status

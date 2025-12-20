@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 	"github.com/hanthor/bluefin-cli/internal/starship"
+	"github.com/hanthor/bluefin-cli/internal/tui"
 )
 
 var starshipCmd = &cobra.Command{
@@ -74,9 +75,12 @@ func runThemeSelector() error {
 				).
 				Value(&selectedTheme),
 		),
-	)
+	).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
 
 	if err := form.Run(); err != nil {
+		if err == huh.ErrUserAborted {
+			return nil
+		}
 		return fmt.Errorf("form error: %w", err)
 	}
 

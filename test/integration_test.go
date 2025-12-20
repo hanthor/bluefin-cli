@@ -16,8 +16,8 @@ const (
 type ShellConfig struct {
 	Name         string
 	ConfigFile   string
-	BlingPattern string
-	BlingScript  string
+	ShellPattern string
+	ShellScript  string
 	InitShell    func() error
 }
 
@@ -25,22 +25,22 @@ var shells = []ShellConfig{
 	{
 		Name:         "bash",
 		ConfigFile:   ".bashrc",
-		BlingPattern: "bling.sh",
-		BlingScript:  "bling.sh",
+		ShellPattern: "shell.sh",
+		ShellScript:  "shell.sh",
 		InitShell:    func() error { return touchFile(filepath.Join(os.Getenv("HOME"), ".bashrc")) },
 	},
 	{
 		Name:         "zsh",
 		ConfigFile:   ".zshrc",
-		BlingPattern: "bling.sh",
-		BlingScript:  "bling.sh",
+		ShellPattern: "shell.sh",
+		ShellScript:  "shell.sh",
 		InitShell:    func() error { return touchFile(filepath.Join(os.Getenv("HOME"), ".zshrc")) },
 	},
 	{
 		Name:         "fish",
 		ConfigFile:   ".config/fish/config.fish",
-		BlingPattern: "bling.fish",
-		BlingScript:  "bling.fish",
+		ShellPattern: "shell.fish",
+		ShellScript:  "shell.fish",
 		InitShell: func() error {
 			dir := filepath.Join(os.Getenv("HOME"), ".config/fish")
 			if err := os.MkdirAll(dir, 0755); err != nil {
@@ -51,22 +51,21 @@ var shells = []ShellConfig{
 	},
 }
 
-// Tool configuration for testing bling script content
+// Tool configuration for testing shell script content
 type ToolConfig struct {
 	Name    string
 	Pattern string
-	Script  string // "bling.sh" or "bling.fish"
+	Shell   string // "bash", "zsh", or "fish"
 }
 
 var tools = []ToolConfig{
-	{Name: "eza", Pattern: "alias ls='eza'", Script: "bling.sh"},
-	{Name: "bat", Pattern: "alias cat='bat", Script: "bling.sh"},
-	{Name: "starship-bash", Pattern: "starship init bash", Script: "bling.sh"},
-	{Name: "starship-zsh", Pattern: "starship init zsh", Script: "bling.sh"},
-	{Name: "starship-fish", Pattern: "starship init fish", Script: "bling.fish"},
-	{Name: "zoxide", Pattern: "zoxide init", Script: "bling.sh"},
-	{Name: "atuin", Pattern: "atuin init", Script: "bling.sh"},
-	{Name: "command-check", Pattern: "command -v eza", Script: "bling.sh"},
+	{Name: "eza", Pattern: "alias ll='eza", Shell: "bash"},
+	{Name: "bat", Pattern: "alias cat='bat", Shell: "bash"},
+	{Name: "starship-bash", Pattern: "starship init ${BLING_SHELL}", Shell: "bash"},
+	{Name: "starship-zsh", Pattern: "starship init ${BLING_SHELL}", Shell: "zsh"},
+	{Name: "starship-fish", Pattern: "starship init fish", Shell: "fish"},
+	{Name: "zoxide", Pattern: "zoxide init", Shell: "bash"},
+	{Name: "atuin", Pattern: "atuin init", Shell: "bash"},
 }
 
 func TestMain(m *testing.M) {
@@ -123,35 +122,37 @@ func TestStatusCommand(t *testing.T) {
 	}
 }
 
-func TestBlingEnableForAllShells(t *testing.T) {
+func TestShellEnableForAllShells(t *testing.T) {
 	for _, shell := range shells {
 		t.Run(shell.Name, func(t *testing.T) {
-			// Enable bling
-			_, err := runCommand(t, "bling", shell.Name, "on")
+			// Enable shell
+			_, err := runCommand(t, "shell", shell.Name, "on")
 			if err != nil {
-				t.Fatalf("Failed to enable bling for %s: %v", shell.Name, err)
+				t.Fatalf("Failed to enable shell for %s: %v", shell.Name, err)
 			}
 			
-			// Verify config file contains bling pattern
+			// Verify config file contains the eval line
 			configPath := filepath.Join(os.Getenv("HOME"), shell.ConfigFile)
-			if !fileContains(t, configPath, shell.BlingPattern) {
-				t.Errorf("Config file %s doesn't contain bling pattern %s", configPath, shell.BlingPattern)
+			expected := "bluefin-cli init"
+			if !fileContains(t, configPath, expected) {
+				t.Errorf("Config file %s doesn't contain init command %s", configPath, expected)
 			}
 		})
 	}
 }
 
-func TestBlingScriptSourcing(t *testing.T) {
+func TestShellScriptSourcing(t *testing.T) {
 	for _, shell := range shells {
 		t.Run(shell.Name, func(t *testing.T) {
-			configPath := filepath.Join(os.Getenv("HOME"), shell.ConfigFile)
-			content, err := os.ReadFile(configPath)
+			// Run init command and check if it outputs the script content
+			output, err := runCommand(t, "init", shell.Name)
 			if err != nil {
-				t.Fatalf("Failed to read config: %v", err)
+				t.Fatalf("Failed to run init: %v", err)
 			}
 			
-			if !strings.Contains(string(content), shell.BlingScript) {
-				t.Errorf("Shell config doesn't source bling script")
+			// We check for some shell specific syntax or standard env vars
+			if !strings.Contains(output, "BLUEFIN_SHELL_ENABLE_EZA") {
+				t.Errorf("Init output doesn't seem to contain shell script logic")
 			}
 		})
 	}
@@ -179,41 +180,31 @@ func TestShellSyntax(t *testing.T) {
 	}
 }
 
-func TestBlingToolConfigurations(t *testing.T) {
+func TestShellToolConfigurations(t *testing.T) {
 	for _, tool := range tools {
 		t.Run(tool.Name, func(t *testing.T) {
-			scriptPath := filepath.Join(os.Getenv("HOME"), ".local/share/bluefin-cli/bling", tool.Script)
-			if !fileContains(t, scriptPath, tool.Pattern) {
-				t.Errorf("Bling script doesn't contain configuration for %s", tool.Name)
+			// Run init to get the script content
+			output, err := runCommand(t, "init", tool.Shell)
+			if err != nil {
+				t.Fatalf("Failed to run init: %v", err)
+			}
+
+			if !strings.Contains(output, tool.Pattern) {
+				t.Errorf("Shell initialization script doesn't contain configuration for %s (pattern: %s)", tool.Name, tool.Pattern)
 			}
 		})
 	}
 }
 
 func TestMOTDSystem(t *testing.T) {
-	t.Run("EnableMOTD", func(t *testing.T) {
-		_, err := runCommand(t, "motd", "toggle", "bash", "on")
-		if err != nil {
-			t.Fatalf("Failed to enable MOTD: %v", err)
-		}
-	})
-	
 	t.Run("MOTDInBashrc", func(t *testing.T) {
-		bashrc := filepath.Join(os.Getenv("HOME"), ".bashrc")
-		if !fileContains(t, bashrc, "bluefin-motd.sh") {
-			t.Error("MOTD not configured in bashrc")
+		output, _ := runCommand(t, "init", "bash")
+		if !strings.Contains(output, "bluefin-cli motd show") {
+			t.Error("MOTD hook missing from init output")
 		}
 	})
 	
-	t.Run("MOTDResourcesInstalled", func(t *testing.T) {
-		motdDir := filepath.Join(os.Getenv("HOME"), ".local/share/bluefin-cli/motd")
-		tipsDir := filepath.Join(motdDir, "tips")
-		
-		files, err := filepath.Glob(filepath.Join(tipsDir, "*.md"))
-		if err != nil || len(files) < 10 {
-			t.Errorf("Not enough MOTD tips found: got %d, want >= 10", len(files))
-		}
-	})
+	// MOTD resources check removed as it depends on external setup not controlled by CLI logic under test
 	
 	t.Run("MOTDShowCommand", func(t *testing.T) {
 		output, _ := runCommand(t, "motd", "show")
@@ -238,15 +229,15 @@ func TestStatusReflectsChanges(t *testing.T) {
 	}
 }
 
-func TestBlingDisable(t *testing.T) {
-	_, err := runCommand(t, "bling", "bash", "off")
+func TestShellDisable(t *testing.T) {
+	_, err := runCommand(t, "shell", "bash", "off")
 	if err != nil {
-		t.Fatalf("Failed to disable bling: %v", err)
+		t.Fatalf("Failed to disable shell: %v", err)
 	}
 	
 	bashrc := filepath.Join(os.Getenv("HOME"), ".bashrc")
-	if fileContains(t, bashrc, "# bluefin-cli bling") {
-		t.Error("Bling marker still present in bashrc after disable")
+	if fileContains(t, bashrc, "# bluefin-cli shell-config") {
+		t.Error("Shell marker still present in bashrc after disable")
 	}
 }
 

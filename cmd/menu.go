@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
+	"github.com/hanthor/bluefin-cli/internal/shell"
 	"github.com/hanthor/bluefin-cli/internal/status"
 	"github.com/hanthor/bluefin-cli/internal/tui"
 )
@@ -15,14 +16,31 @@ var menuCmd = &cobra.Command{
 			tui.ClearScreen()
 			tui.RenderHeader("Bluefin CLI", "Main Menu")
 
+			// Check status
+			shellStatus := shell.CheckStatus()
+			hasShell := false
+			for _, v := range shellStatus {
+				if v {
+					hasShell = true
+					break
+				}
+			}
+
+			var shellLabel string
+			if hasShell {
+				shellLabel = "Bluefin Shell (Enabled)"
+			} else {
+				shellLabel = "Bluefin Shell (Disabled)"
+			}
+
 			// Build options dynamically, include OS scripts if available
 			opts := []huh.Option[string]{
 				huh.NewOption("📊 Status", "status"),
-				huh.NewOption("✨ Bling", "bling"),
-				huh.NewOption("📰 MOTD", "motd"),
-				huh.NewOption("📦 Install Tools", "bundles"),
-				huh.NewOption("🖼  Wallpapers", "wallpapers"),
-				huh.NewOption("🚀 Starship Theme", "starship"),
+				huh.NewOption(shellLabel+" ❯", "shell"),
+				huh.NewOption("📰 MOTD ❯", "motd"),
+				huh.NewOption("📦 Install Tools ❯", "bundles"),
+				huh.NewOption("🖼  Wallpapers ❯", "wallpapers"),
+				huh.NewOption("🚀 Starship Theme ❯", "starship"),
 			}
 			opts = append(opts, huh.NewOption("Exit", "exit"))
 
@@ -36,7 +54,7 @@ var menuCmd = &cobra.Command{
 				),
 			).WithTheme(tui.AppTheme)
 
-			if err := form.Run(); err != nil {
+			if err := form.WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap()).Run(); err != nil {
 				// ESC pressed on main menu - exit cleanly
 				return nil
 			}
@@ -47,8 +65,8 @@ var menuCmd = &cobra.Command{
 					return err
 				}
 				tui.Pause()
-			case "bling":
-				if err := runBlingMenu(); err != nil {
+			case "shell":
+				if err := runShellMenu(); err != nil {
 					return err
 				}
 			case "motd":
