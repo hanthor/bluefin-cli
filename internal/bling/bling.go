@@ -75,170 +75,52 @@ var (
 const blingMarker = "# bluefin-cli bling"
 
 // Toggle enables or disables bling for the specified shell
+// Deprecated: Use 'bluefin-cli init' instead
+// Deprecated: Use 'bluefin-cli init' instead
 func Toggle(shell string, enable bool) error {
-	shell = strings.ToLower(shell)
-
-	var configFile string
-	var sourceLine string
-
-	switch shell {
-	case "bash":
-		configFile = filepath.Join(os.Getenv("HOME"), ".bashrc")
-		blingPath, err := ensureBlingScript("bash")
-		if err != nil {
-			return err
-		}
-		// Ensure config/env files exist
-		if _, err := LoadConfig(); err != nil {
-			return fmt.Errorf("failed to load/init config: %w", err)
-		}
-		// We re-save to ensure env files are generated matching the config
-		cfg, _ := LoadConfig()
-		if err := GenerateEnvFiles(cfg); err != nil {
-			return fmt.Errorf("failed to generate env files: %w", err)
-		}
-
-		if enable {
-			InstallTools(cfg)
-		}
-
-		sourceLine = fmt.Sprintf(`if [ -n "${BASH_VERSION:-}" ]; then . %s; fi`, blingPath)
-	case "zsh":
-		configFile = filepath.Join(os.Getenv("HOME"), ".zshrc")
-		blingPath, err := ensureBlingScript("zsh")
-		if err != nil {
-			return err
-		}
-		// Ensure config/env files exist
-		if _, err := LoadConfig(); err != nil {
-			return fmt.Errorf("failed to load/init config: %w", err)
-		}
-		cfg, _ := LoadConfig()
-		if err := GenerateEnvFiles(cfg); err != nil {
-			return fmt.Errorf("failed to generate env files: %w", err)
-		}
-
-		if enable {
-			InstallTools(cfg)
-		}
-
-		sourceLine = fmt.Sprintf(`test -f %s && source %s`, blingPath, blingPath)
-	case "fish":
-		configFile = filepath.Join(os.Getenv("HOME"), ".config/fish/config.fish")
-		blingPath, err := ensureBlingScript("fish")
-		if err != nil {
-			return err
-		}
-		// Ensure config/env files exist
-		if _, err := LoadConfig(); err != nil {
-			return fmt.Errorf("failed to load/init config: %w", err)
-		}
-		cfg, _ := LoadConfig()
-		if err := GenerateEnvFiles(cfg); err != nil {
-			return fmt.Errorf("failed to generate env files: %w", err)
-		}
-
-		if enable {
-			InstallTools(cfg)
-		}
-
-		sourceLine = fmt.Sprintf("source %s", blingPath)
-	default:
-		return fmt.Errorf("unsupported shell: %s (supported: bash, zsh, fish)", shell)
-	}
-
-	// Ensure config file exists
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		dir := filepath.Dir(configFile)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create config directory: %w", err)
-		}
-		if err := os.WriteFile(configFile, []byte(""), 0644); err != nil {
-			return fmt.Errorf("failed to create config file: %w", err)
-		}
-	}
-
-	content, err := os.ReadFile(configFile)
-	if err != nil {
-		return fmt.Errorf("failed to read config file: %w", err)
-	}
-
-	hasMarker := strings.Contains(string(content), blingMarker)
-
-	if enable {
-		if hasMarker {
-			fmt.Println(infoStyle.Render(fmt.Sprintf("ℹ Bling already enabled for %s", shell)))
-			return nil
-		}
-
-		// Add bling
-		newContent := string(content) + "\n" + blingMarker + "\n" + sourceLine + "\n"
-		if err := os.WriteFile(configFile, []byte(newContent), 0644); err != nil {
-			return fmt.Errorf("failed to update config file: %w", err)
-		}
-
-		fmt.Println(successStyle.Render(fmt.Sprintf("✓ Bling enabled for %s", shell)))
-		fmt.Println(infoStyle.Render(fmt.Sprintf("  Restart your %s session or run: source %s", shell, configFile)))
-	} else {
-		if !hasMarker {
-			fmt.Println(infoStyle.Render(fmt.Sprintf("ℹ Bling already disabled for %s", shell)))
-			return nil
-		}
-
-		// Remove bling
-		lines := strings.Split(string(content), "\n")
-		var newLines []string
-		skipNext := false
-
-		for _, line := range lines {
-			if skipNext {
-				skipNext = false
-				continue
-			}
-			if strings.Contains(line, blingMarker) {
-				skipNext = true // Skip the next line (the source command)
-				continue
-			}
-			newLines = append(newLines, line)
-		}
-
-		newContent := strings.Join(newLines, "\n")
-		if err := os.WriteFile(configFile, []byte(newContent), 0644); err != nil {
-			return fmt.Errorf("failed to update config file: %w", err)
-		}
-
-		fmt.Println(successStyle.Render(fmt.Sprintf("✓ Bling disabled for %s", shell)))
-	}
-
+	fmt.Println(infoStyle.Render("ℹ Note: shell integration is now handled via 'bluefin-cli init'"))
 	return nil
 }
 
-// ensureBlingScript ensures the bling script is installed and returns its path
-func ensureBlingScript(shell string) (string, error) {
-	homeDir := os.Getenv("HOME")
-	blingDir := filepath.Join(homeDir, ".local/share/bluefin-cli/bling")
-
-	if err := os.MkdirAll(blingDir, 0755); err != nil {
-		return "", fmt.Errorf("failed to create bling directory: %w", err)
+// Init returns the shell initialization script
+func Init(shell string) (string, error) {
+	config, err := LoadConfig()
+	if err != nil {
+		// Fallback to default if config can't be loaded (e.g. permission error, though unlikely)
+		config = DefaultConfig()
 	}
 
-	var scriptPath string
-	var scriptContent string
+	var sb strings.Builder
 
+	// 1. Generate Environment Variables
 	if shell == "fish" {
-		scriptPath = filepath.Join(blingDir, "bling.fish")
-		scriptContent = blingFishScript
+		fmt.Fprintf(&sb, "set -gx BLING_ENABLE_EZA %d\n", boolToInt(config.Eza))
+		fmt.Fprintf(&sb, "set -gx BLING_ENABLE_UGREP %d\n", boolToInt(config.Ugrep))
+		fmt.Fprintf(&sb, "set -gx BLING_ENABLE_BAT %d\n", boolToInt(config.Bat))
+		fmt.Fprintf(&sb, "set -gx BLING_ENABLE_ATUIN %d\n", boolToInt(config.Atuin))
+		fmt.Fprintf(&sb, "set -gx BLING_ENABLE_STARSHIP %d\n", boolToInt(config.Starship))
+		fmt.Fprintf(&sb, "set -gx BLING_ENABLE_ZOXIDE %d\n", boolToInt(config.Zoxide))
+		fmt.Fprintf(&sb, "set -gx BLING_ENABLE_UUTILS %d\n", boolToInt(config.Uutils))
 	} else {
-		scriptPath = filepath.Join(blingDir, "bling.sh")
-		scriptContent = blingShScript
+		fmt.Fprintf(&sb, "export BLING_ENABLE_EZA=%d\n", boolToInt(config.Eza))
+		fmt.Fprintf(&sb, "export BLING_ENABLE_UGREP=%d\n", boolToInt(config.Ugrep))
+		fmt.Fprintf(&sb, "export BLING_ENABLE_BAT=%d\n", boolToInt(config.Bat))
+		fmt.Fprintf(&sb, "export BLING_ENABLE_ATUIN=%d\n", boolToInt(config.Atuin))
+		fmt.Fprintf(&sb, "export BLING_ENABLE_STARSHIP=%d\n", boolToInt(config.Starship))
+		fmt.Fprintf(&sb, "export BLING_ENABLE_ZOXIDE=%d\n", boolToInt(config.Zoxide))
+		fmt.Fprintf(&sb, "export BLING_ENABLE_UUTILS=%d\n", boolToInt(config.Uutils))
+	}
+	
+	sb.WriteString("\n")
+
+	// 2. Append Bling Script
+	if shell == "fish" {
+		sb.WriteString(blingFishScript)
+	} else {
+		sb.WriteString(blingShScript)
 	}
 
-	// Write the script
-	if err := os.WriteFile(scriptPath, []byte(scriptContent), 0755); err != nil {
-		return "", fmt.Errorf("failed to write bling script: %w", err)
-	}
-
-	return scriptPath, nil
+	return sb.String(), nil
 }
 
 // CheckStatus returns whether bling is enabled for each shell

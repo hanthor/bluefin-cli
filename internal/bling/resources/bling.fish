@@ -1,10 +1,7 @@
 #!/usr/bin/env fish
 
 # Source the configuration environment file if it exists
-set BLING_ENV_FILE "$HOME/.local/share/bluefin-cli/bling/bling-env.fish"
-if test -f "$BLING_ENV_FILE"
-    source "$BLING_ENV_FILE"
-end
+
 
 # Default to enabled if variable is not set (backwards compatibility)
 if not set -q BLING_ENABLE_EZA

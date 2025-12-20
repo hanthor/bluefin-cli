@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/hanthor/bluefin-cli/internal/env"
 )
 
 // Config holds the configuration for bling tools
@@ -27,7 +29,7 @@ func DefaultConfig() *Config {
 		Atuin:    true,
 		Starship: true,
 		Zoxide:   true,
-		Uutils:   false, // Default to false (opt-in)
+		Uutils:   true, // Default to true (opt-out)
 	}
 }
 
@@ -55,7 +57,7 @@ func LoadConfig() (*Config, error) {
 	return &config, nil
 }
 
-// SaveConfig writes the configuration to file and regenerates env files
+// SaveConfig writes the configuration to file
 func SaveConfig(config *Config) error {
 	configPath, err := getConfigPath()
 	if err != nil {
@@ -76,59 +78,22 @@ func SaveConfig(config *Config) error {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
 
-	return GenerateEnvFiles(config)
-}
-
-// GenerateEnvFiles creates the shell environment files with export statements
-func GenerateEnvFiles(config *Config) error {
-	blingDir := getBlingDir()
-	if err := os.MkdirAll(blingDir, 0755); err != nil {
-		return fmt.Errorf("failed to create bling directory: %w", err)
-	}
-
-	// Generate bash/zsh env file
-	shContent := fmt.Sprintf(`export BLING_ENABLE_EZA=%d
-export BLING_ENABLE_UGREP=%d
-export BLING_ENABLE_BAT=%d
-export BLING_ENABLE_ATUIN=%d
-export BLING_ENABLE_STARSHIP=%d
-export BLING_ENABLE_ZOXIDE=%d
-export BLING_ENABLE_UUTILS=%d
-`, boolToInt(config.Eza), boolToInt(config.Ugrep), boolToInt(config.Bat), boolToInt(config.Atuin), boolToInt(config.Starship), boolToInt(config.Zoxide), boolToInt(config.Uutils))
-
-	if err := os.WriteFile(filepath.Join(blingDir, "bling-env.sh"), []byte(shContent), 0644); err != nil {
-		return fmt.Errorf("failed to write bash env file: %w", err)
-	}
-
-	// Generate fish env file
-	fishContent := fmt.Sprintf(`set -gx BLING_ENABLE_EZA %d
-set -gx BLING_ENABLE_UGREP %d
-set -gx BLING_ENABLE_BAT %d
-set -gx BLING_ENABLE_ATUIN %d
-set -gx BLING_ENABLE_STARSHIP %d
-set -gx BLING_ENABLE_ZOXIDE %d
-set -gx BLING_ENABLE_UUTILS %d
-`, boolToInt(config.Eza), boolToInt(config.Ugrep), boolToInt(config.Bat), boolToInt(config.Atuin), boolToInt(config.Starship), boolToInt(config.Zoxide), boolToInt(config.Uutils))
-
-	if err := os.WriteFile(filepath.Join(blingDir, "bling-env.fish"), []byte(fishContent), 0644); err != nil {
-		return fmt.Errorf("failed to write fish env file: %w", err)
-	}
-
 	return nil
 }
 
+// GenerateEnvFiles was removed as we now use 'bluefin-cli init'
+
+
 func getConfigPath() (string, error) {
-	home, err := os.UserHomeDir()
+	dir, err := env.GetConfigDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".config", "bluefin-cli", "bling-config.json"), nil
+	return filepath.Join(dir, "bling.json"), nil
 }
 
-func getBlingDir() string {
-	home := os.Getenv("HOME")
-	return filepath.Join(home, ".local/share/bluefin-cli/bling")
-}
+// getBlingDir removed
+
 
 func boolToInt(b bool) int {
 	if b {

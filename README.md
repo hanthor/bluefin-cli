@@ -171,6 +171,11 @@ cat     # bat --style=plain --pager=never
 grep    # ugrep (if installed)
 ```
 
+## 📚 Documentation
+
+- [Interactive Menu Structure](docs/menus.md): A visual guide to the application's menu hierarchy and options.
+- [Available Tools](docs/tools.md): A comprehensive list of all tools and bundles available.
+
 ## 🏗️ Project Structure
 
 ```

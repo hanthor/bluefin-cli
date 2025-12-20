@@ -5,8 +5,7 @@
 BLING_SOURCED=1
 
 # Source the configuration environment file if it exists
-BLING_ENV_FILE="${HOME}/.local/share/bluefin-cli/bling/bling-env.sh"
-[ -f "$BLING_ENV_FILE" ] && . "$BLING_ENV_FILE"
+
 
 # Default to enabled if variable is not set (backwards compatibility)
 : "${BLING_ENABLE_EZA:=1}"
@@ -36,8 +35,7 @@ if [ "$BLING_ENABLE_UGREP" -eq 1 ] && [ "$(command -v ug)" ]; then
     alias xzfgrep='ug -zF'
 fi
 
-# bat 
-# for cat
+# bat for cat
 if [ "$BLING_ENABLE_BAT" -eq 1 ]; then
     alias cat='bat --style=plain --pager=never' 2>/dev/null
 fi
@@ -48,36 +46,21 @@ HOMEBREW_PREFIX="${HOMEBREW_PREFIX:-/home/linuxbrew/.linuxbrew}"
 # Atuin allows these flags: "--disable-up-arrow" and/or "--disable-ctrl-r"
 ATUIN_INIT_FLAGS=${ATUIN_INIT_FLAGS:-""}
 
-if [ "$(basename "$SHELL")" = "bash" ]; then
+BLING_SHELL="$(basename "$(readlink /proc/$$/exe)")"
+
+if [ "${BLING_SHELL}" = "bash" ]; then
     [ -f "/etc/profile.d/bash-preexec.sh" ] && . "/etc/profile.d/bash-preexec.sh"
     [ -f "/usr/share/bash-prexec" ] && . "/usr/share/bash-prexec"
     [ -f "/usr/share/bash-prexec.sh" ] && . "/usr/share/bash-prexec.sh"
     [ -f "${HOMEBREW_PREFIX}/etc/profile.d/bash-preexec.sh" ] && . "${HOMEBREW_PREFIX}/etc/profile.d/bash-preexec.sh"
-    
-    # Initialize atuin before starship to ensure proper command history capture
-    # See: https://github.com/atuinsh/atuin/issues/2804 
-    if [ "$BLING_ENABLE_ATUIN" -eq 1 ] && [ "$(command -v atuin)" ]; then
-        eval "$(atuin init bash ${ATUIN_INIT_FLAGS})"
-    fi
-
-    if [ "$BLING_ENABLE_STARSHIP" -eq 1 ] && [ "$(command -v starship)" ]; then
-        eval "$(starship init bash)"
-    fi
-    
-    if [ "$BLING_ENABLE_ZOXIDE" -eq 1 ] && [ "$(command -v zoxide)" ]; then
-        eval "$(zoxide init bash)"
-    fi
-elif [ "$(basename "$SHELL")" = "zsh" ]; then
-    # Initialize atuin before starship to ensure proper command history capture
-    if [ "$BLING_ENABLE_ATUIN" -eq 1 ] && [ "$(command -v atuin)" ]; then
-        eval "$(atuin init zsh ${ATUIN_INIT_FLAGS})"
-    fi
-
-    if [ "$BLING_ENABLE_STARSHIP" -eq 1 ] && [ "$(command -v starship)" ]; then
-        eval "$(starship init zsh)"
-    fi
-
-    if [ "$BLING_ENABLE_ZOXIDE" -eq 1 ] && [ "$(command -v zoxide)" ]; then
-        eval "$(zoxide init zsh)"
-    fi
 fi
+
+# Initialize atuin before starship to ensure proper command history capture
+# See: https://github.com/atuinsh/atuin/issues/2804 
+[ "$BLING_ENABLE_ATUIN" -eq 1 ] && [ "$(command -v atuin)" ] && eval "$(atuin init ${BLING_SHELL} ${ATUIN_INIT_FLAGS})"
+
+[ "$BLING_ENABLE_STARSHIP" -eq 1 ] && [ "$(command -v starship)" ] && eval "$(starship init ${BLING_SHELL})"
+
+[ "$BLING_ENABLE_ZOXIDE" -eq 1 ] && [ "$(command -v zoxide)" ] && eval "$(zoxide init ${BLING_SHELL})"
+
+
