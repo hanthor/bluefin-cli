@@ -22,6 +22,15 @@ end
 if not set -q BLUEFIN_SHELL_ENABLE_ZOXIDE
     set BLUEFIN_SHELL_ENABLE_ZOXIDE 1
 end
+if not set -q BLUEFIN_SHELL_ENABLE_UUTILSCOREUTILS
+    set BLUEFIN_SHELL_ENABLE_UUTILSCOREUTILS 1
+end
+if not set -q BLUEFIN_SHELL_ENABLE_UUTILSFINDUTILS
+    set BLUEFIN_SHELL_ENABLE_UUTILSFINDUTILS 1
+end
+if not set -q BLUEFIN_SHELL_ENABLE_UUTILSDIFFUTILS
+    set BLUEFIN_SHELL_ENABLE_UUTILSDIFFUTILS 1
+end
 
 # ls aliases
 if test "$BLUEFIN_SHELL_ENABLE_EZA" -eq 1; and type -q eza
@@ -45,6 +54,16 @@ end
 if test "$BLUEFIN_SHELL_ENABLE_BAT" -eq 1
     alias cat='bat --style=plain --pager=never' 2>/dev/null
 end
+
+# uutils
+# We assume HOMEBREW_PREFIX is set by brew shellenv or similar, otherwise fallback
+if not set -q HOMEBREW_PREFIX
+    set HOMEBREW_PREFIX "/home/linuxbrew/.linuxbrew"
+end
+
+test "$BLUEFIN_SHELL_ENABLE_UUTILSCOREUTILS" -eq 1; and fish_add_path --prepend "$HOMEBREW_PREFIX/opt/uutils-coreutils/libexec/uubin"
+test "$BLUEFIN_SHELL_ENABLE_UUTILSFINDUTILS" -eq 1; and fish_add_path --prepend "$HOMEBREW_PREFIX/opt/uutils-findutils/libexec/uubin"
+test "$BLUEFIN_SHELL_ENABLE_UUTILSDIFFUTILS" -eq 1; and fish_add_path --prepend "$HOMEBREW_PREFIX/opt/uutils-diffutils/libexec/uubin" 
 
 if status is-interactive
     # Initialize atuin before starship to ensure proper command history capture

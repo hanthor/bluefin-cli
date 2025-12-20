@@ -33,10 +33,9 @@ func TestShow(t *testing.T) {
 	// Verify expected sections
 	expectedStrings := []string{
 		"Bluefin CLI Status",
-		"Shell Bling:",
+		"Shell Experience:",
 		"Message of the Day:",
-		"Required Tools:",
-		"Optional Tools:",
+		"Managed Tools:",
 		"Package Manager:",
 	}
 

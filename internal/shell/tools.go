@@ -27,5 +27,7 @@ var Tools = []Tool{
 	{Name: "Atuin", Description: "Magical shell history", Binary: "atuin", Pkg: "atuin", Default: true},
 	{Name: "Starship", Description: "The minimal, blazing-fast, and infinitely customizable prompt", Binary: "starship", Pkg: "starship", Default: true},
 	{Name: "Zoxide", Description: "A smarter cd command", Binary: "zoxide", Pkg: "zoxide", Default: true},
-	{Name: "Uutils", Description: "Rust rewrite of GNU coreutils", Binary: "uutils", Pkg: "uutils-coreutils", Default: true},
+	{Name: "UutilsCoreutils", Description: "Rust rewrite of GNU coreutils", Binary: "uutils", Pkg: "uutils-coreutils", Default: true},
+	{Name: "UutilsFindutils", Description: "Rust rewrite of GNU findutils", Binary: "ufind", Pkg: "uutils-findutils", Default: true},
+	{Name: "UutilsDiffutils", Description: "Rust rewrite of GNU diffutils", Binary: "udiff", Pkg: "uutils-diffutils", Default: true},
 }

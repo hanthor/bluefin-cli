@@ -4,9 +4,6 @@
 [ "${BLING_SOURCED:-0}" -eq 1 ] && return 
 BLING_SOURCED=1
 
-# Source the configuration environment file if it exists
-
-
 # Default to enabled if variable is not set (backwards compatibility)
 : "${BLUEFIN_SHELL_ENABLE_EZA:=1}"
 : "${BLUEFIN_SHELL_ENABLE_UGREP:=1}"
@@ -14,6 +11,9 @@ BLING_SOURCED=1
 : "${BLUEFIN_SHELL_ENABLE_ATUIN:=1}"
 : "${BLUEFIN_SHELL_ENABLE_STARSHIP:=1}"
 : "${BLUEFIN_SHELL_ENABLE_ZOXIDE:=1}"
+: "${BLUEFIN_SHELL_ENABLE_UUTILSCOREUTILS:=1}"
+: "${BLUEFIN_SHELL_ENABLE_UUTILSFINDUTILS:=1}"
+: "${BLUEFIN_SHELL_ENABLE_UUTILSDIFFUTILS:=1}"
 
 # eza
 # ls aliases
@@ -41,6 +41,11 @@ if [ "$BLUEFIN_SHELL_ENABLE_BAT" -eq 1 ]; then
 fi
 
 HOMEBREW_PREFIX="${HOMEBREW_PREFIX:-/home/linuxbrew/.linuxbrew}"
+
+# uutils
+[ "$BLUEFIN_SHELL_ENABLE_UUTILSCOREUTILS" -eq 1 ] && PATH="${HOMEBREW_PREFIX}/opt/uutils-coreutils/libexec/uubin:$PATH"
+[ "$BLUEFIN_SHELL_ENABLE_UUTILSFINDUTILS" -eq 1 ] && PATH="${HOMEBREW_PREFIX}/opt/uutils-findutils/libexec/uubin:$PATH"
+[ "$BLUEFIN_SHELL_ENABLE_UUTILSDIFFUTILS" -eq 1 ] && PATH="${HOMEBREW_PREFIX}/opt/uutils-diffutils/libexec/uubin:$PATH"
 
 # set ATUIN_INIT_FLAGS in your ~/.bashrc before ublue-bling is sourced.
 # Atuin allows these flags: "--disable-up-arrow" and/or "--disable-ctrl-r"
