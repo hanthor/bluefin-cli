@@ -34,6 +34,12 @@ var (
 	WarningStyle = lipgloss.NewStyle().Foreground(CurrentTheme.WarningText)
 	InfoStyle    = lipgloss.NewStyle().Foreground(CurrentTheme.InfoText)
 
+	PopupStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(CurrentTheme.ErrorText).
+			Padding(1, 2).
+			Align(lipgloss.Center)
+
 	// Theme
 	AppTheme = huh.ThemeCatppuccin()
 )

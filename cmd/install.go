@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 	"github.com/hanthor/bluefin-cli/internal/install"
 	"github.com/hanthor/bluefin-cli/internal/tui"
@@ -16,7 +18,6 @@ var installCmd = &cobra.Command{
 
 Available bundles:
   ai               - AI tools (Goose, Codex, Gemini, Ramalama, etc.)
-  artwork          - Artwork and design tools.
   cli              - CLI essentials (gh, chezmoi, etc.)
   cncf             - Cloud Native Computing Foundation tools.
   experimental-ide - Experimental IDE tools.
@@ -51,7 +52,6 @@ func init() {
 	installCmd.AddCommand(installWallpapersCmd)
 }
 
-// Wallpapers: install casks from ublue-os/tap
 var installWallpapersCmd = &cobra.Command{
 	Use:   "wallpapers [cask...]",
 	Short: "Install wallpaper casks from ublue-os/tap",
@@ -69,35 +69,58 @@ var installWallpapersCmd = &cobra.Command{
 func runBundlesMenu() error {
 	var selectedBundles []string
 
-	opts := []huh.Option[string]{
-		huh.NewOption("🤖 AI Tools", "ai"),
-		huh.NewOption("🎨 Artwork", "artwork"),
-		huh.NewOption("💻 CLI Essentials", "cli"),
-		huh.NewOption("☁️  CNCF Tools", "cncf"),
-		huh.NewOption("🧪 Experimental IDE", "experimental-ide"),
-		huh.NewOption("🔤 Development Fonts", "fonts"),
-		huh.NewOption("📝 IDE Tools", "ide"),
-		huh.NewOption("☸️  Kubernetes Tools", "k8s"),
-	}
+	for {
+		tui.ClearScreen()
+		tui.RenderHeader("Bluefin CLI", "Install Bundles")
+		// Reset selection
+		selectedBundles = []string{}
 
-	if install.IsLinux() && install.IsGnome() {
-		opts = append(opts, huh.NewOption("🖥️  Full GNOME Desktop", "full-desktop"))
-	}
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewMultiSelect[string]().
-				Title("Select bundles to install (space to select, enter to confirm)").
-				Options(opts...).
-				Value(&selectedBundles),
-		),
-	).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
-
-	if err := form.Run(); err != nil {
-		if err == huh.ErrUserAborted {
-			return nil
+		opts := []huh.Option[string]{
+			huh.NewOption("🤖 AI Tools", "ai"),
+			huh.NewOption("💻 CLI Essentials", "cli"),
+			huh.NewOption("☁️  CNCF Tools", "cncf"),
+			huh.NewOption("🧪 Experimental IDE", "experimental-ide"),
+			huh.NewOption("🔤 Development Fonts", "fonts"),
+			huh.NewOption("📝 IDE Tools", "ide"),
+			huh.NewOption("☸️  Kubernetes Tools", "k8s"),
 		}
-		return fmt.Errorf("form error: %w", err)
+
+		if install.IsLinux() && install.IsGnome() {
+			opts = append(opts, huh.NewOption("🖥️  Full GNOME Desktop", "full-desktop"))
+		}
+
+		form := huh.NewForm(
+			huh.NewGroup(
+				huh.NewMultiSelect[string]().
+					Title("Select bundles to install (space to select, enter to confirm)").
+					Options(opts...).
+					Value(&selectedBundles),
+			),
+		).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
+
+		if err := form.Run(); err != nil {
+			if err == huh.ErrUserAborted {
+				return nil
+			}
+			return fmt.Errorf("form error: %w", err)
+		}
+
+		if len(selectedBundles) > 0 {
+			break
+		}
+
+		// Popup error message
+		msg := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("9")).
+			Bold(true).
+			Render("No Selection") + "\n\n" +
+			"You must select at least one bundle to install.\nUse Space to select items."
+
+		fmt.Println()
+		fmt.Println(tui.PopupStyle.Render(msg))
+		fmt.Println()
+		
+		time.Sleep(3 * time.Second)
 	}
 
 	var brewfiles []string
