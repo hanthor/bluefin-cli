@@ -38,7 +38,7 @@ var menuCmd = &cobra.Command{
 				huh.NewOption("📊 Status", "status"),
 				huh.NewOption(shellLabel+" ❯", "shell"),
 				huh.NewOption("📰 MOTD ❯", "motd"),
-				huh.NewOption("📦 Install Tools ❯", "bundles"),
+				huh.NewOption("📦 Install Apps ❯", "bundles"),
 				huh.NewOption("🖼  Wallpapers ❯", "wallpapers"),
 				huh.NewOption("🚀 Starship Theme ❯", "starship"),
 			}

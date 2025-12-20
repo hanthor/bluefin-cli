@@ -80,7 +80,6 @@ func runBundlesMenu() error {
 		huh.NewOption("☸️  Kubernetes Tools", "k8s"),
 	}
 
-	// Conditionally add Full GNOME Desktop
 	if install.IsLinux() && install.IsGnome() {
 		opts = append(opts, huh.NewOption("🖥️  Full GNOME Desktop", "full-desktop"))
 	}
@@ -101,17 +100,52 @@ func runBundlesMenu() error {
 		return fmt.Errorf("form error: %w", err)
 	}
 
-	// Install each selected bundle
+	var brewfiles []string
+	var cleanups []func()
+
+	defer func() {
+		for _, c := range cleanups {
+			c()
+		}
+	}()
+
 	for _, bundle := range selectedBundles {
-		if err := install.Bundle(bundle); err != nil {
+		path, cleanup, err := install.GetBrewfile(bundle)
+		if err != nil {
+			return err
+		}
+		brewfiles = append(brewfiles, path)
+		cleanups = append(cleanups, cleanup)
+	}
+
+	if len(brewfiles) > 0 {
+		if err := install.EnsureBbrew(); err != nil {
+			return err
+		}
+
+		var finalPath string
+		if len(brewfiles) > 1 {
+			mergedPath, cleanup, err := install.MergeBrewfiles(brewfiles)
+			if err != nil {
+				return err
+			}
+			cleanups = append(cleanups, cleanup)
+			finalPath = mergedPath
+			fmt.Println(tui.InfoStyle.Render("🍺 Merged Brewfiles into single view..."))
+		} else {
+			finalPath = brewfiles[0]
+		}
+
+		fmt.Println(tui.InfoStyle.Render(fmt.Sprintf("🍺 Opening apps in bbrew...")))
+		if err := install.RunBbrew(finalPath); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
 func runWallpapersMenu() error {
-	// Interactive mode: discover available casks and let user multi-select
 	casks, err := install.GetWallpaperCasks()
 	if err != nil {
 		return fmt.Errorf("failed to discover wallpaper casks: %w", err)
@@ -120,10 +154,8 @@ func runWallpapersMenu() error {
 		return fmt.Errorf("no wallpaper casks found in ublue-os/tap")
 	}
 
-	// Build options list
 	opts := make([]huh.Option[string], 0, len(casks))
 	for _, c := range casks {
-		// Show pretty labels, value is the plain cask name
 		opts = append(opts, huh.NewOption(c, c))
 	}
 

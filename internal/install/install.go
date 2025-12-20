@@ -71,84 +71,133 @@ var bundles = map[string]BundleSpec{
 	},
 }
 
-// Bundle installs a Homebrew bundle
 func Bundle(nameOrPath string) error {
-	// Check if brew is installed
 	if _, err := exec.LookPath("brew"); err != nil {
 		return fmt.Errorf("Homebrew not found. Please install Homebrew first: https://brew.sh")
 	}
 
-	var brewfilePath string
+	brewfilePath, cleanup, err := GetBrewfile(nameOrPath)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
 
-	// Special case: install all bundles
-	if nameOrPath == "all" {
-		fmt.Println(titleStyle.Render("📦 Installing all bundles..."))
-		for name := range bundles {
-			fmt.Println(infoStyle.Render(fmt.Sprintf("\n Installing bundle: %s", name)))
-			if err := Bundle(name); err != nil {
-				fmt.Println(errorStyle.Render(fmt.Sprintf("✗ Failed to install %s: %v", name, err)))
-			}
-		}
-		return nil
+	if err := EnsureBbrew(); err != nil {
+		return err
 	}
 
-	// Check if it's a file path
-	if strings.Contains(nameOrPath, "/") || strings.Contains(nameOrPath, "\\") {
-		// It's a path
-		if _, err := os.Stat(nameOrPath); os.IsNotExist(err) {
-			return fmt.Errorf("Brewfile not found: %s", nameOrPath)
-		}
-		brewfilePath = nameOrPath
-	} else {
-		// It's a bundle name
-		bundle, ok := bundles[nameOrPath]
-		if !ok {
-			return fmt.Errorf("unknown bundle: %s (available: ai, artwork, cli, cncf, experimental-ide, fonts, full-desktop, ide, k8s, all)", nameOrPath)
-		}
+	fmt.Println(infoStyle.Render(fmt.Sprintf("🍺 Opening %s in bbrew...", brewfilePath)))
 
-		// Ensure Flathub if using full-desktop
-		if nameOrPath == "full-desktop" {
-			if err := EnsureFlathub(); err != nil {
-				return err
-			}
-		}
-
-		// determine path
-		path := defaultBrewPath
-		if bundle.Path != "" {
-			path = bundle.Path
-		}
-
-		// Download the Brewfile
-		url := fmt.Sprintf("%s/%s/%s", commonBaseURL, path, bundle.File)
-		tmpDir := os.TempDir()
-		brewfilePath = filepath.Join(tmpDir, bundle.File)
-
-		fmt.Println(infoStyle.Render(fmt.Sprintf("⬇️  Downloading %s bundle...", nameOrPath)))
-
-		if err := downloadFile(url, brewfilePath); err != nil {
-			return fmt.Errorf("failed to download bundle: %w", err)
-		}
-		defer os.Remove(brewfilePath) // Clean up after installation
+	if err := RunBbrew(brewfilePath); err != nil {
+		return fmt.Errorf("bbrew failed: %w", err)
 	}
 
-	// Install the bundle
-	fmt.Println(infoStyle.Render(fmt.Sprintf("📦 Installing packages from: %s", brewfilePath)))
-
-	cmd := exec.Command("brew", "bundle", "install", "--file", brewfilePath)
-	cmd.Env = append(os.Environ(), "HOMEBREW_NO_ENV_HINTS=1")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("brew bundle failed: %w", err)
-	}
-
-	fmt.Println(successStyle.Render("✓ Bundle installed successfully!"))
 	return nil
 }
 
-// ListBundles displays all available bundles
+func GetBrewfile(nameOrPath string) (string, func(), error) {
+	if strings.Contains(nameOrPath, "/") || strings.Contains(nameOrPath, "\\") {
+		if _, err := os.Stat(nameOrPath); os.IsNotExist(err) {
+			return "", func() {}, fmt.Errorf("Brewfile not found: %s", nameOrPath)
+		}
+		return nameOrPath, func() {}, nil
+	}
+
+	bundle, ok := bundles[nameOrPath]
+	if !ok {
+		return "", func() {}, fmt.Errorf("unknown bundle: %s (available: ai, artwork, cli, cncf, experimental-ide, fonts, full-desktop, ide, k8s, all)", nameOrPath)
+	}
+
+	if nameOrPath == "full-desktop" {
+		if err := EnsureFlathub(); err != nil {
+			return "", func() {}, err
+		}
+	}
+
+	path := defaultBrewPath
+	if bundle.Path != "" {
+		path = bundle.Path
+	}
+
+	url := fmt.Sprintf("%s/%s/%s", commonBaseURL, path, bundle.File)
+	tmpDir := os.TempDir()
+	brewfilePath := filepath.Join(tmpDir, bundle.File)
+
+	fmt.Println(infoStyle.Render(fmt.Sprintf("⬇️  Downloading %s bundle...", nameOrPath)))
+
+	if err := downloadFile(url, brewfilePath); err != nil {
+		return "", func() {}, fmt.Errorf("failed to download bundle: %w", err)
+	}
+
+	cleanup := func() {
+		os.Remove(brewfilePath)
+	}
+
+	return brewfilePath, cleanup, nil
+}
+
+func MergeBrewfiles(paths []string) (string, func(), error) {
+	if len(paths) == 0 {
+		return "", func() {}, fmt.Errorf("no brewfiles to merge")
+	}
+
+	tmpDir := os.TempDir()
+	mergedPath := filepath.Join(tmpDir, "merged.Brewfile")
+
+	f, err := os.Create(mergedPath)
+	if err != nil {
+		return "", func() {}, err
+	}
+	defer f.Close()
+
+	for _, p := range paths {
+		content, err := os.ReadFile(p)
+		if err != nil {
+			return "", func() {}, err
+		}
+		if _, err := f.Write(content); err != nil {
+			return "", func() {}, err
+		}
+		if _, err := f.WriteString("\n"); err != nil {
+			return "", func() {}, err
+		}
+	}
+
+	cleanup := func() {
+		os.Remove(mergedPath)
+	}
+
+	return mergedPath, cleanup, nil
+}
+
+func CheckBbrew() error {
+	_, err := exec.LookPath("bbrew")
+	return err
+}
+
+func EnsureBbrew() error {
+	if err := CheckBbrew(); err == nil {
+		return nil
+	}
+
+	fmt.Println(infoStyle.Render("🍺 bbrew not found, installing..."))
+	cmd := exec.Command("brew", "install", "Valkyrie00/homebrew-bbrew/bbrew")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install bbrew: %w", err)
+	}
+	return nil
+}
+
+func RunBbrew(brewfilePath string) error {
+	cmd := exec.Command("bbrew", "-f", brewfilePath)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
 func ListBundles() {
 	fmt.Println(titleStyle.Render("📦 Available Homebrew Bundles"))
 	fmt.Println()
@@ -186,30 +235,25 @@ func downloadFile(url, filepath string) error {
 	return err
 }
 
-// IsLinux checks if the OS is Linux
 func IsLinux() bool {
 	return runtime.GOOS == "linux"
 }
 
-// IsGnome checks if the current desktop environment is GNOME
 func IsGnome() bool {
 	xdgCurrentDesktop := os.Getenv("XDG_CURRENT_DESKTOP")
 	return strings.Contains(strings.ToUpper(xdgCurrentDesktop), "GNOME")
 }
 
-// CheckFlatpak checks if flatpak is installed
 func CheckFlatpak() error {
 	_, err := exec.LookPath("flatpak")
 	return err
 }
 
-// EnsureFlathub ensures Flathub remote is added if flatpak is available
 func EnsureFlathub() error {
 	if err := CheckFlatpak(); err != nil {
 		return fmt.Errorf("flatpak not found. Please install flatpak first: https://flatpak.org/setup/")
 	}
 
-	// Check if flathub exists
 	cmd := exec.Command("flatpak", "remote-list")
 	out, err := cmd.Output()
 	if err == nil && strings.Contains(string(out), "flathub") {

@@ -7,6 +7,7 @@ This document outlines the potential future direction for `bluefin-cli`.
 - **CI/CD Pipeline**: Ensure automated builds and releases are working correctly for cross-platform (if applicable) or at least Linux/AMD64.
 
 ## 🌟 Short-term Improvements
+- **Use bold-brew fo
 - **Expanded Bundles**:
     - Add `devops` bundle (Terraform, Ansible, etc.).
     - Add `gaming` bundle (Lutris, Steam tools, etc.) Flatpaks are now available in Brewfiles on Linux ans Casks on macOS for Steam
@@ -15,10 +16,6 @@ This document outlines the potential future direction for `bluefin-cli`.
     - Add `ranger` for terminal file management.
 - **Validation**: Add a `doctor` command to verify environment health (e.g., "Is Homebrew healthy?", "Are shell configs conflicting?").
 
-## 🚀 Mid-term Goals
-- **Granular Bling Control**:
-    - Allow users to toggle individual tools (e.g., enable `starship` but disable `atuin`).
-    - Add TUI checkboxes for individual components in the bling menu.
 
 ## 🔭 Long-term Vision
 - **Configurability**:

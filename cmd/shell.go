@@ -176,7 +176,6 @@ func configureShellTools() error {
 		}
 	}
 	
-	// Build options dynamically
 	var options []huh.Option[string]
 	for _, tool := range shell.Tools {
 		label := fmt.Sprintf("%s (%s)", tool.Name, tool.Description)
@@ -201,11 +200,7 @@ func configureShellTools() error {
 	}
 
 	// Update config
-	newCfg := shell.DefaultConfig() // Start with defaults
-	// First disable everything, then enable selected? 
-	// Or just update based on selection.
-	// Since Config is a map, we can iterate Tools and set based on presence in selected.
-	
+	newCfg := shell.DefaultConfig() 
 	// Create a set for selected tools
 	selectedSet := make(map[string]bool)
 	for _, s := range selected {

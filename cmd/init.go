@@ -34,15 +34,11 @@ Fish (~/.config/fish/config.fish):
 	RunE: func(cmd *cobra.Command, args []string) error {
 		shellName := args[0]
 		
-		// Load existing config or default
 		config, err := shell.LoadConfig()
 		if err != nil {
-			// If loading fails, just use default, don't break init
 			config = shell.DefaultConfig()
 		}
 
-		// Override with flags if explicitly set
-		// Since we generated flags dynamically, we can iterate over Tools to check them
 		for _, tool := range shell.Tools {
 			flagName := strings.ToLower(tool.Name)
 			if cmd.Flags().Changed(flagName) {
@@ -88,7 +84,6 @@ end`)
 func init() {
 	rootCmd.AddCommand(initCmd)
 	
-	// Dynamically generate flags for each tool
 	for _, tool := range shell.Tools {
 		flagName := strings.ToLower(tool.Name)
 		toolFlags[flagName] = initCmd.Flags().Bool(flagName, tool.Default, fmt.Sprintf("Enable %s", tool.Name))
