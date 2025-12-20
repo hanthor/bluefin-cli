@@ -16,7 +16,6 @@ var menuCmd = &cobra.Command{
 			tui.ClearScreen()
 			tui.RenderHeader("Bluefin CLI", "Main Menu")
 
-			// Check status
 			shellStatus := shell.CheckStatus()
 			hasShell := false
 			for _, v := range shellStatus {
@@ -28,12 +27,11 @@ var menuCmd = &cobra.Command{
 
 			var shellLabel string
 			if hasShell {
-				shellLabel = "Bluefin Shell (Enabled)"
+				shellLabel = "🐚 Bluefin Shell (Enabled)"
 			} else {
-				shellLabel = "Bluefin Shell (Disabled)"
+				shellLabel = "🐚 Bluefin Shell (Disabled)"
 			}
 
-			// Build options dynamically, include OS scripts if available
 			opts := []huh.Option[string]{
 				huh.NewOption("📊 Status", "status"),
 				huh.NewOption(shellLabel+" ❯", "shell"),

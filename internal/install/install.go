@@ -36,10 +36,6 @@ var bundles = map[string]BundleSpec{
 		File:        "ai-tools.Brewfile",
 		Description: "AI tools: Goose, Codex, Gemini, Ramalama, etc.",
 	},
-	"artwork": {
-		File:        "artwork.Brewfile",
-		Description: "Artwork and design tools.",
-	},
 	"cli": {
 		File:        "cli.Brewfile",
 		Description: "CLI essentials: GitHub CLI, chezmoi, etc.",
@@ -105,7 +101,7 @@ func GetBrewfile(nameOrPath string) (string, func(), error) {
 
 	bundle, ok := bundles[nameOrPath]
 	if !ok {
-		return "", func() {}, fmt.Errorf("unknown bundle: %s (available: ai, artwork, cli, cncf, experimental-ide, fonts, full-desktop, ide, k8s, all)", nameOrPath)
+		return "", func() {}, fmt.Errorf("unknown bundle: %s (available: ai, cli, cncf, experimental-ide, fonts, full-desktop, ide, k8s, all)", nameOrPath)
 	}
 
 	if nameOrPath == "full-desktop" {

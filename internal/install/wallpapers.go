@@ -48,7 +48,6 @@ func GetWallpaperCasks() ([]string, error) {
         if line == "" {
             continue
         }
-        // Accept both tap/name and plain name; normalize to plain name for selection
         if strings.Contains(line, "/") {
             parts := strings.Split(line, "/")
             line = parts[len(parts)-1]
@@ -58,7 +57,6 @@ func GetWallpaperCasks() ([]string, error) {
     if err := scanner.Err(); err != nil {
         return nil, err
     }
-    // Optional: filter only wallpaper casks if the tap has other casks; match "wallpaper" keyword
     var filtered []string
     for _, c := range casks {
         if strings.Contains(strings.ToLower(c), "wallpaper") {
@@ -68,11 +66,9 @@ func GetWallpaperCasks() ([]string, error) {
     if len(filtered) > 0 {
         return filtered, nil
     }
-    // Fallback to full list if no explicit wallpaper-named casks were found
     return casks, nil
 }
 
-// InstallWallpaperCasks installs the provided casks from the ublue-os/tap tap
 func InstallWallpaperCasks(casks []string) error {
     if err := ensureTap(wallpapersTap); err != nil {
         return err

@@ -105,7 +105,6 @@ func runMotdMenu() error {
 					Value(&action),
 			),
 		).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap()).Run(); err != nil {
-			// Abort or ctrl+c -> go back/exit
 			return nil
 		}
 
@@ -113,13 +112,11 @@ func runMotdMenu() error {
 			if err := motd.Show(); err != nil {
 				return err
 			}
-			continue // Show menu again after displaying MOTD
+			continue
 		}
 
-		// Toggle mode - check current status
 		status := motd.CheckStatus()
 		
-		// Pre-select shells that currently have MOTD enabled
 		var selected []string
 		for _, shell := range []string{"bash", "zsh", "fish"} {
 			if status[shell] {
@@ -127,7 +124,6 @@ func runMotdMenu() error {
 			}
 		}
 		
-		// Store initial state
 		initialSelected := make(map[string]bool)
 		for _, sh := range selected {
 			initialSelected[sh] = true
@@ -146,22 +142,18 @@ func runMotdMenu() error {
 					Value(&selected),
 			),
 		).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap()).Run(); err != nil {
-			// Abort -> go back to motd menu
 			continue
 		}
 
-		// Build map of final selections
 		finalSelected := make(map[string]bool)
 		for _, sh := range selected {
 			finalSelected[sh] = true
 		}
 
-		// Apply changes for shells that changed state
 		for _, shell := range []string{"bash", "zsh", "fish"} {
 			wasEnabled := initialSelected[shell]
 			isEnabled := finalSelected[shell]
 			
-			// Only toggle if state changed
 			if wasEnabled != isEnabled {
 				if err := motd.Toggle(shell, isEnabled); err != nil {
 					return err
@@ -169,7 +161,6 @@ func runMotdMenu() error {
 			}
 		}
 		
-		// After toggling, return to main menu
 		return nil
 	}
 }

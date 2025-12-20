@@ -26,7 +26,7 @@ graph TD
     MOTDToggle --> |Multi-Select| ShellsList
 
     Bundles --> BundlesList[Select Bundles]
-    BundlesList --> |Multi-Select| BundlesOptions[AI Tools, Artwork, CLI Essentials, CNCF Tools, Experimental IDE, Fonts, IDE Tools, K8s Tools]
+    BundlesList --> |Multi-Select| BundlesOptions[AI Tools, CLI Essentials, CNCF Tools, Experimental IDE, Fonts, IDE Tools, K8s Tools]
 
     Wallpapers --> WallpapersList[Select Wallpapers]
     WallpapersList --> |Multi-Select| WallpaperCasks[List from ublue-os/tap]
