@@ -1,4 +1,4 @@
-package bling
+package shell
 
 import (
 	"os"

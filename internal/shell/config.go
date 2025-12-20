@@ -1,4 +1,4 @@
-package bling
+package shell
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	"github.com/hanthor/bluefin-cli/internal/env"
 )
 
-// Config holds the configuration for bling tools
+// Config holds the configuration for shell experience tools
 type Config struct {
 	Eza      bool `json:"eza"`
 	Ugrep    bool `json:"ugrep"`
@@ -89,7 +89,23 @@ func getConfigPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, "bling.json"), nil
+	
+	shellConfig := filepath.Join(dir, "shell.json")
+	blingConfig := filepath.Join(dir, "bling.json")
+
+	// Migration: If shell.json doesn't exist but bling.json does, rename it
+	if _, err := os.Stat(shellConfig); os.IsNotExist(err) {
+		if _, err := os.Stat(blingConfig); err == nil {
+			// found old config, rename it
+			if err := os.Rename(blingConfig, shellConfig); err != nil {
+				// warn but don't fail, we'll just start fresh or read old one if we fell back logic (but we won't complexity here)
+				// simplest is just print check? No, we can't print easily here without dep. 
+				// Just let it be. If rename fails, we'll just return shell.json path and it will be created as new.
+			}
+		}
+	}
+
+	return shellConfig, nil
 }
 
 // getBlingDir removed

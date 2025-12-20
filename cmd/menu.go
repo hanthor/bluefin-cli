@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
+	"github.com/hanthor/bluefin-cli/internal/shell"
 	"github.com/hanthor/bluefin-cli/internal/status"
 	"github.com/hanthor/bluefin-cli/internal/tui"
 )
@@ -15,10 +16,27 @@ var menuCmd = &cobra.Command{
 			tui.ClearScreen()
 			tui.RenderHeader("Bluefin CLI", "Main Menu")
 
+			// Check status
+			shellStatus := shell.CheckStatus()
+			hasShell := false
+			for _, v := range shellStatus {
+				if v {
+					hasShell = true
+					break
+				}
+			}
+
+			var shellLabel string
+			if hasShell {
+				shellLabel = "Shell Experience (Enabled)"
+			} else {
+				shellLabel = "Shell Experience (Disabled)"
+			}
+
 			// Build options dynamically, include OS scripts if available
 			opts := []huh.Option[string]{
 				huh.NewOption("📊 Status", "status"),
-				huh.NewOption("✨ Bling", "bling"),
+				huh.NewOption(shellLabel, "shell"),
 				huh.NewOption("📰 MOTD", "motd"),
 				huh.NewOption("📦 Install Tools", "bundles"),
 				huh.NewOption("🖼  Wallpapers", "wallpapers"),
@@ -47,8 +65,8 @@ var menuCmd = &cobra.Command{
 					return err
 				}
 				tui.Pause()
-			case "bling":
-				if err := runBlingMenu(); err != nil {
+			case "shell":
+				if err := runShellMenu(); err != nil {
 					return err
 				}
 			case "motd":

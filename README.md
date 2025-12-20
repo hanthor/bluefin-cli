@@ -66,22 +66,30 @@ View your current configuration and installed tools:
 bluefin-cli status
 ```
 
-#### Bling - Modern Shell Enhancements
+## ✨ Shell Experience
 
-Enable/disable bling for your shell:
+Bluefin CLI includes a "Shell Experience" module (formerly "bling") that configures your shell with modern tools and aliases.
+
+To enable the shell experience:
 
 ```bash
-# Interactive mode
-bluefin-cli bling
-
-# Enable for specific shell
-bluefin-cli bling bash on
-bluefin-cli bling zsh on
-bluefin-cli bling fish on
-
-# Disable bling
-bluefin-cli bling bash off
+bluefin-cli shell bash on
+# or
+bluefin-cli shell zsh on
+# or
+bluefin-cli shell fish on
 ```
+
+Or use the interactive menu: `bluefin-cli menu` -> "Shell Experience".
+
+Features:
+- **eza**: Modern replacement for `ls`
+- **bat**: Syntax highlighting for `cat`
+- **ugrep**: Faster grep
+- **zoxide**: Smarter `cd`
+- **atuin**: Shell history sync
+- **starship**: Cross-shell prompt
+- **uutils**: Rust rewrite of coreutilsl
 
 #### MOTD - Message of the Day
 

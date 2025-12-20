@@ -5,19 +5,19 @@ The Bluefin CLI provides a rich interactive menu system to manage your environme
 ```mermaid
 graph TD
     Main[Main Menu] --> Status[📊 Status]
-    Main --> Bling[✨ Bling]
+    Main --> Shell[✨ Shell Shell Experience]
     Main --> MOTD[📰 MOTD]
     Main --> Bundles[📦 Install Tools]
     Main --> Wallpapers[🖼  Wallpapers]
     Main --> Starship[🚀 Starship Theme]
 
-    Bling --> BlingAction{Action}
-    BlingAction -->|Toggle Current| BlingToggle[Enable/Disable Current Shell]
-    BlingAction -->|Configure Components| BlingComps[Select Tools]
-    BlingAction -->|Manage Shells| BlingShells[Select Shells to Enable]
+    Shell --> ShellAction{Action}
+    ShellAction -->|Toggle Current| ShellToggle[Enable/Disable Current Shell]
+    ShellAction -->|Configure Components| ShellComps[Select Tools]
+    ShellAction -->|Manage Shells| ShellShells[Select Shells to Enable]
 
-    BlingComps --> |Multi-Select| BlingToolsList[eza, ugrep, bat, atuin, starship, zoxide, uutils]
-    BlingShells --> |Multi-Select| ShellsList[bash, zsh, fish]
+    ShellComps --> |Multi-Select| ShellToolsList[eza, ugrep, bat, atuin, starship, zoxide, uutils]
+    ShellShells --> |Multi-Select| ShellsList[bash, zsh, fish]
 
     MOTD --> MOTDAction{Action}
     MOTDAction -->|Show| MOTDShow[Display MOTD]
@@ -38,7 +38,7 @@ graph TD
 ## Section Descriptions
 
 - **Status**: Checks the current configuration and installation status of tools.
-- **Bling**: Manages shell enhancements like `eza`, `bat`, `starship`, etc. You can toggle them for specific shells or configure which tools are enabled.
+- **Shell Experience**: Manages shell enhancements like `eza`, `bat`, `starship`, etc. You can toggle them for specific shells or configure which tools are enabled.
 - **MOTD**: Controls the "Message of the Day" that appears when you open a terminal.
 - **Install Tools**: Allows you to install curated bundles of Homebrew packages for various use cases (AI, Dev, Kubernetes, etc.).
 - **Wallpapers**: Browse and install wallpapers available as Homebrew casks.

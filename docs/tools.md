@@ -2,8 +2,8 @@
 
 The Bluefin CLI allows you to install various tools and configurations. Below is a comprehensive list of what's available.
 
-## Bling Tools
-These are modern shell replacements and enhancements that are managed via the `bling` command.
+## Shell Experience Tools
+These are modern shell replacements and enhancements that are managed via the `shell` command.
 
 | Tool | Description |
 |------|-------------|

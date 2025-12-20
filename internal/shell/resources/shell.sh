@@ -8,16 +8,16 @@ BLING_SOURCED=1
 
 
 # Default to enabled if variable is not set (backwards compatibility)
-: "${BLING_ENABLE_EZA:=1}"
-: "${BLING_ENABLE_UGREP:=1}"
-: "${BLING_ENABLE_BAT:=1}"
-: "${BLING_ENABLE_ATUIN:=1}"
-: "${BLING_ENABLE_STARSHIP:=1}"
-: "${BLING_ENABLE_ZOXIDE:=1}"
+: "${BLUEFIN_SHELL_ENABLE_EZA:=1}"
+: "${BLUEFIN_SHELL_ENABLE_UGREP:=1}"
+: "${BLUEFIN_SHELL_ENABLE_BAT:=1}"
+: "${BLUEFIN_SHELL_ENABLE_ATUIN:=1}"
+: "${BLUEFIN_SHELL_ENABLE_STARSHIP:=1}"
+: "${BLUEFIN_SHELL_ENABLE_ZOXIDE:=1}"
 
 # eza
 # ls aliases
-if [ "$BLING_ENABLE_EZA" -eq 1 ] && [ "$(command -v eza)" ]; then
+if [ "$BLUEFIN_SHELL_ENABLE_EZA" -eq 1 ] && [ "$(command -v eza)" ]; then
     alias ll='eza -l --icons=auto --group-directories-first'
     alias l.='eza -d .*'
     alias ls='eza'
@@ -26,7 +26,7 @@ fi
 
 # ugrep 
 # for grep
-if [ "$BLING_ENABLE_UGREP" -eq 1 ] && [ "$(command -v ug)" ]; then
+if [ "$BLUEFIN_SHELL_ENABLE_UGREP" -eq 1 ] && [ "$(command -v ug)" ]; then
     alias grep='ug'
     alias egrep='ug -E'
     alias fgrep='ug -F'
@@ -36,7 +36,7 @@ if [ "$BLING_ENABLE_UGREP" -eq 1 ] && [ "$(command -v ug)" ]; then
 fi
 
 # bat for cat
-if [ "$BLING_ENABLE_BAT" -eq 1 ]; then
+if [ "$BLUEFIN_SHELL_ENABLE_BAT" -eq 1 ]; then
     alias cat='bat --style=plain --pager=never' 2>/dev/null
 fi
 
@@ -57,10 +57,10 @@ fi
 
 # Initialize atuin before starship to ensure proper command history capture
 # See: https://github.com/atuinsh/atuin/issues/2804 
-[ "$BLING_ENABLE_ATUIN" -eq 1 ] && [ "$(command -v atuin)" ] && eval "$(atuin init ${BLING_SHELL} ${ATUIN_INIT_FLAGS})"
+[ "$BLUEFIN_SHELL_ENABLE_ATUIN" -eq 1 ] && [ "$(command -v atuin)" ] && eval "$(atuin init ${BLING_SHELL} ${ATUIN_INIT_FLAGS})"
 
-[ "$BLING_ENABLE_STARSHIP" -eq 1 ] && [ "$(command -v starship)" ] && eval "$(starship init ${BLING_SHELL})"
+[ "$BLUEFIN_SHELL_ENABLE_STARSHIP" -eq 1 ] && [ "$(command -v starship)" ] && eval "$(starship init ${BLING_SHELL})"
 
-[ "$BLING_ENABLE_ZOXIDE" -eq 1 ] && [ "$(command -v zoxide)" ] && eval "$(zoxide init ${BLING_SHELL})"
+[ "$BLUEFIN_SHELL_ENABLE_ZOXIDE" -eq 1 ] && [ "$(command -v zoxide)" ] && eval "$(zoxide init ${BLING_SHELL})"
 
 

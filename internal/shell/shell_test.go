@@ -1,4 +1,4 @@
-package bling
+package shell
 
 import (
 	"os"
@@ -30,19 +30,19 @@ func TestInit(t *testing.T) {
 		{
 			"Bash init", 
 			"bash", 
-			[]string{"export BLING_ENABLE_EZA=", "bling.sh"}, 
+			[]string{"export BLUEFIN_SHELL_ENABLE_EZA=", "shell.sh"}, 
 			false,
 		},
 		{
 			"Fish init", 
 			"fish", 
-			[]string{"set -gx BLING_ENABLE_EZA", "bling.fish"}, 
+			[]string{"set -gx BLUEFIN_SHELL_ENABLE_EZA", "shell.fish"}, 
 			false,
 		},
 		{
 			"Zsh init", 
 			"zsh", 
-			[]string{"export BLING_ENABLE_EZA=", "bling.sh"}, 
+			[]string{"export BLUEFIN_SHELL_ENABLE_EZA=", "shell.sh"}, 
 			false,
 		},
 	}
@@ -57,16 +57,9 @@ func TestInit(t *testing.T) {
 			
 			for _, want := range tt.wantIn {
 				// We check if the expected strings (like export commands or script content parts) are present
-				// Note: we can't easily check for full equality as embedded script might change, 
-				// but we can check for key parts. 
-				// For script check, we assume bling.sh/fish content logic is roughly consistent or we mock it?
-				// Just checking for variable exports is a good start.
-				// The variables name check is good.
-				if want == "bling.sh" || want == "bling.fish" {
-					// We can't check for filenames in the output because Init prints CONTENT, not filenames.
-					// But users passed "bling.sh" as a test expectation marker for "should contain script content"
-					// We'll skip this check here or check for actual content if we knew it.
-					continue 
+				if want == "shell.sh" || want == "shell.fish" {
+					// Check for a known variable that should be in the script
+					want = "BLUEFIN_SHELL_ENABLE_EZA"
 				}
 				
 				if !strings.Contains(got, want) {
@@ -85,7 +78,7 @@ func TestCheckStatus(t *testing.T) {
 
 	// Manually create a bashrc with the marker
 	bashrc := filepath.Join(tmpHome, ".bashrc")
-	content := "# bluefin-cli bling\n"
+	content := "# bluefin-cli shell-config\n"
 	if err := os.WriteFile(bashrc, []byte(content), 0644); err != nil {
 		t.Fatalf("Failed to create mock bashrc: %v", err)
 	}
@@ -93,10 +86,10 @@ func TestCheckStatus(t *testing.T) {
 	status := CheckStatus()
 
 	if !status["bash"] {
-		t.Error("Expected bash bling to be enabled (legacy detection)")
+		t.Error("Expected bash shell experience to be enabled")
 	}
 	if status["zsh"] {
-		t.Error("Expected zsh bling to be disabled")
+		t.Error("Expected zsh shell experience to be disabled")
 	}
 }
 

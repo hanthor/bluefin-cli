@@ -6,16 +6,16 @@ import (
 	"path/filepath"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
-	"github.com/hanthor/bluefin-cli/internal/bling"
+	"github.com/hanthor/bluefin-cli/internal/shell"
 	"github.com/hanthor/bluefin-cli/internal/tui"
 )
 
-var blingCmd = &cobra.Command{
-	Use:   "bling [shell] [on|off]",
-	Short: "Toggle bling shell enhancements",
-	Long: `Enable or disable bling shell enhancements (modern aliases and tool initialization).
+var shellCmd = &cobra.Command{
+	Use:   "shell [shell] [on|off]",
+	Short: "Toggle shell experience enhancements",
+	Long: `Enable or disable shell experience enhancements (modern aliases and tool initialization).
 	
-Bling provides:
+The Shell Experience provides:
   - Modern ls replacement with eza (ll, ls aliases)
   - bat for cat with syntax highlighting
   - ugrep for faster grep
@@ -23,7 +23,7 @@ Bling provides:
 	Args: cobra.MaximumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
-			return runBlingMenu()
+			return runShellMenu()
 		}
 
 		// Args provided
@@ -33,23 +33,23 @@ Bling provides:
 			enable = args[1] == "on"
 		}
 
-		return bling.Toggle(selectedShell, enable)
+		return shell.Toggle(selectedShell, enable)
 	},
 }
 
-var blingConfigCmd = &cobra.Command{
+var shellConfigCmd = &cobra.Command{
 	Use:   "config",
-	Short: "Configure individual bling tools",
-	Long:  `Enable or disable specific bling components interactively.`,
+	Short: "Configure individual shell experience tools",
+	Long:  `Enable or disable specific shell experience components interactively.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return configureBlingTools()
+		return configureShellTools()
 	},
 }
 
-func runBlingMenu() error {
+func runShellMenu() error {
 	for {
 		tui.ClearScreen()
-		tui.RenderHeader("Bluefin CLI", "Bling Configuration")
+		tui.RenderHeader("Bluefin CLI", "Shell Configuration")
 
 		// Detect current shell
 		currentShellPath := os.Getenv("SHELL")
@@ -59,7 +59,7 @@ func runBlingMenu() error {
 		}
 
 		// Check status for current shell
-		status := bling.CheckStatus()
+		status := shell.CheckStatus()
 		isEnabled := status[currentShell]
 		toggleLabel := fmt.Sprintf("Enable for current shell (%s)", currentShell)
 		if isEnabled {
@@ -85,16 +85,16 @@ func runBlingMenu() error {
 
 		switch action {
 		case "toggle_current":
-			if err := bling.Toggle(currentShell, !isEnabled); err != nil {
+			if err := shell.Toggle(currentShell, !isEnabled); err != nil {
 				return err
 			}
 			tui.Pause()
 		case "shells":
-			if err := blingShellsMenu(); err != nil {
+			if err := shellShellsMenu(); err != nil {
 				return err
 			}
 		case "components":
-			if err := configureBlingTools(); err != nil {
+			if err := configureShellTools(); err != nil {
 				return err
 			}
 		case "exit":
@@ -103,12 +103,12 @@ func runBlingMenu() error {
 	}
 }
 
-func blingShellsMenu() error {
+func shellShellsMenu() error {
 	tui.ClearScreen()
-	tui.RenderHeader("Bluefin CLI", "Bling > Shells")
+	tui.RenderHeader("Bluefin CLI", "Shell > Shells")
 
 	// Check current status
-	status := bling.CheckStatus()
+	status := shell.CheckStatus()
 	
 	// Pre-select shells that currently have bling enabled
 	var selected []string
@@ -147,13 +147,13 @@ func blingShellsMenu() error {
 	}
 
 	// Apply changes for shells that changed state
-	for _, shell := range []string{"bash", "zsh", "fish"} {
-		wasEnabled := initialSelected[shell]
-		isEnabled := finalSelected[shell]
+	for _, shName := range []string{"bash", "zsh", "fish"} {
+		wasEnabled := initialSelected[shName]
+		isEnabled := finalSelected[shName]
 		
 		// Only toggle if state changed
 		if wasEnabled != isEnabled {
-			if err := bling.Toggle(shell, isEnabled); err != nil {
+			if err := shell.Toggle(shName, isEnabled); err != nil {
 				return err
 			}
 			tui.Pause()
@@ -162,11 +162,11 @@ func blingShellsMenu() error {
 	return nil
 }
 
-func configureBlingTools() error {
+func configureShellTools() error {
 	tui.ClearScreen()
-	tui.RenderHeader("Bluefin CLI", "Bling > Components")
+	tui.RenderHeader("Bluefin CLI", "Shell > Components")
 
-	cfg, err := bling.LoadConfig()
+	cfg, err := shell.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
@@ -203,7 +203,7 @@ func configureBlingTools() error {
 	}
 
 	// Update config
-	newCfg := &bling.Config{}
+	newCfg := &shell.Config{}
 	for _, tool := range selected {
 		switch tool {
 		case "eza": newCfg.Eza = true
@@ -216,12 +216,12 @@ func configureBlingTools() error {
 		}
 	}
 
-	if err := bling.SaveConfig(newCfg); err != nil {
+	if err := shell.SaveConfig(newCfg); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 
 	// Install any newly enabled tools
-	bling.InstallTools(newCfg)
+	shell.InstallTools(newCfg)
 
 	fmt.Println(tui.SuccessStyle.Render("Configuration saved! Tools installed/updated."))
 	tui.Pause()
@@ -229,7 +229,7 @@ func configureBlingTools() error {
 }
 
 func init() {
-	rootCmd.AddCommand(blingCmd)
-	blingCmd.AddCommand(blingConfigCmd)
+	rootCmd.AddCommand(shellCmd)
+	shellCmd.AddCommand(shellConfigCmd)
 }
 

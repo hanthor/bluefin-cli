@@ -5,7 +5,7 @@ import (
 	"os/exec"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/hanthor/bluefin-cli/internal/bling"
+	"github.com/hanthor/bluefin-cli/internal/shell"
 	"github.com/hanthor/bluefin-cli/internal/motd"
 )
 
@@ -24,15 +24,15 @@ func Show() error {
 	// --- Left Column ---
 	var leftCol string
 
-	// Bling status
-	leftCol += labelStyle.Render("Shell Bling:") + "\n"
-	blingStatus := bling.CheckStatus()
+	// Shell status
+	leftCol += labelStyle.Render("Shell Experience:") + "\n"
+	shellStatus := shell.CheckStatus()
 	for _, shell := range []string{"bash", "zsh", "fish"} {
 		status := "disabled"
 		style := disabledStyle
 		symbol := "✗"
 		
-		if blingStatus[shell] {
+		if shellStatus[shell] {
 			status = "enabled"
 			style = enabledStyle
 			symbol = "✓"
@@ -70,7 +70,7 @@ func Show() error {
 
 	// Tool dependencies
 	rightCol += labelStyle.Render("Required Tools:") + "\n"
-	deps := bling.CheckDependencies()
+	deps := shell.CheckDependencies()
 	tools := []string{"eza", "bat", "zoxide", "atuin", "starship", "ugrep"}
 	
 	for _, tool := range tools {

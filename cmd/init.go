@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/hanthor/bluefin-cli/internal/bling"
+	"github.com/hanthor/bluefin-cli/internal/shell"
 )
 
 var initCmd = &cobra.Command{
@@ -25,10 +25,10 @@ Fish (~/.config/fish/config.fish):
 	Args:      cobra.ExactArgs(1),
 	ValidArgs: []string{"bash", "zsh", "fish"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		shell := args[0]
+		shellName := args[0]
 		
-		// Get Bling script (exports + aliases)
-		script, err := bling.Init(shell)
+		// Generate bling/shell script
+		script, err := shell.Init(shellName)
 		if err != nil {
 			return err
 		}
@@ -39,7 +39,7 @@ Fish (~/.config/fish/config.fish):
 
 		// Add MOTD hook
 		// We append this here because it's simple enough not to need a separate Init function in motd package
-		switch shell {
+		switch shellName {
 		case "bash", "zsh":
 			// Only run MOTD if interactive
 			fmt.Println(`# bluefin-cli motd hook
@@ -52,7 +52,7 @@ if status is-interactive
     bluefin-cli motd show
 end`)
 		default:
-			return fmt.Errorf("unsupported shell: %s", shell)
+			return fmt.Errorf("unsupported shell: %s", shellName)
 		}
 
 		return nil

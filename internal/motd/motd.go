@@ -40,7 +40,7 @@ var defaultTemplate = `# 󱍢 Welcome to Bluefin CLI
 
 |  Command | Description |
 | ------- | ----------- |
-| ` + "`bluefin-cli bling bash on`" + `  | Enable terminal bling for bash  |
+| ` + "`bluefin-cli shell bash on`" + `  | Enable shell experience for bash  |
 | ` + "`bluefin-cli status`" + ` | Show current configuration |
 | ` + "`bluefin-cli help`" + ` | Show all available commands |
 | ` + "`brew help`" + ` | Manage command line packages |
@@ -269,7 +269,8 @@ func CheckStatus() map[string]bool {
 			continue
 		}
 
-		status[shell] = strings.Contains(string(content), motdMarker)
+		// Check for new marker (part of shell experience) OR old motd marker
+		status[shell] = strings.Contains(string(content), motdMarker) || strings.Contains(string(content), "# bluefin-cli shell-config")
 	}
 
 	return status
