@@ -53,6 +53,8 @@ func runStarshipMenu() error {
 }
 
 func runThemeSelector() error {
+	tui.ClearScreen()
+	tui.RenderHeader("Bluefin CLI", "Main Menu > Starship Theme")
 	var selectedTheme string
 
 	form := huh.NewForm(

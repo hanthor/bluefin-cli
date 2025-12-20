@@ -26,7 +26,6 @@ var (
 
 	SubtitleStyle = lipgloss.NewStyle().
 			Foreground(CurrentTheme.SecondaryText).
-			Italic(true).
 			PaddingLeft(1)
 
 	SuccessStyle = lipgloss.NewStyle().Foreground(CurrentTheme.SuccessText).Bold(true)

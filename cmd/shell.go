@@ -50,7 +50,7 @@ var shellConfigCmd = &cobra.Command{
 func runShellMenu() error {
 	for {
 		tui.ClearScreen()
-		tui.RenderHeader("Bluefin CLI", "Shell Configuration")
+		tui.RenderHeader("Bluefin CLI", "Main Menu > Shell")
 
 		currentShellPath := os.Getenv("SHELL")
 		currentShell := filepath.Base(currentShellPath)
@@ -104,7 +104,7 @@ func runShellMenu() error {
 
 func shellShellsMenu() error {
 	tui.ClearScreen()
-	tui.RenderHeader("Bluefin CLI", "Shell > Shells")
+	tui.RenderHeader("Bluefin CLI", "Main Menu > Shell > Shells")
 
 	status := shell.CheckStatus()
 	
@@ -162,7 +162,7 @@ func shellShellsMenu() error {
 
 func configureShellTools() error {
 	tui.ClearScreen()
-	tui.RenderHeader("Bluefin CLI", "Shell > Components")
+	tui.RenderHeader("Bluefin CLI", "Main Menu > Shell > Components")
 
 	cfg, err := shell.LoadConfig()
 	if err != nil {

@@ -71,7 +71,7 @@ func runBundlesMenu() error {
 
 	for {
 		tui.ClearScreen()
-		tui.RenderHeader("Bluefin CLI", "Install Bundles")
+		tui.RenderHeader("Bluefin CLI", "Main Menu > Install Apps")
 		// Reset selection
 		selectedBundles = []string{}
 
@@ -169,6 +169,8 @@ func runBundlesMenu() error {
 }
 
 func runWallpapersMenu() error {
+	tui.ClearScreen()
+	tui.RenderHeader("Bluefin CLI", "Main Menu > Wallpapers")
 	casks, err := install.GetWallpaperCasks()
 	if err != nil {
 		return fmt.Errorf("failed to discover wallpaper casks: %w", err)

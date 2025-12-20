@@ -93,6 +93,8 @@ func init() {
 
 func runMotdMenu() error {
 	for {
+		tui.ClearScreen()
+		tui.RenderHeader("Bluefin CLI", "Main Menu > MOTD")
 		var action string
 		if err := huh.NewForm(
 			huh.NewGroup(
