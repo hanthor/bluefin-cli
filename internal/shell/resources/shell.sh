@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 
-# Check if bling has already been sourced so that we dont break atuin. https://github.com/atuinsh/atuin/issues/380#issuecomment-1594014644
-[ "${BLING_SOURCED:-0}" -eq 1 ] && return 
-BLING_SOURCED=1
+# Check if Bluefin shell has already been sourced so that we dont break atuin. https://github.com/atuinsh/atuin/issues/380#issuecomment-1594014644
+[ "${SOURCED_BLUEFIN_SHELL:-0}" -eq 1 ] && return 
+SOURCED_SHELLIN_SHELL=1
 
 # Default to enabled if variable is not set (backwards compatibility)
 : "${BLUEFIN_SHELL_ENABLE_EZA:=1}"
@@ -43,7 +43,18 @@ if [ "$BLUEFIN_SHELL_ENABLE_BAT" -eq 1 ]; then
     alias cat='bat --style=plain --pager=never' 2>/dev/null
 fi
 
-HOMEBREW_PREFIX="${HOMEBREW_PREFIX:-/home/linuxbrew/.linuxbrew}"
+HOMEBREW_PREFIX="${HOMEBREW_PREFIX:-}"
+if [ -z "$HOMEBREW_PREFIX" ]; then
+    if [ -x "/opt/homebrew/bin/brew" ]; then
+        HOMEBREW_PREFIX="/opt/homebrew"
+    elif [ -x "/usr/local/bin/brew" ]; then
+        HOMEBREW_PREFIX="/usr/local"
+    elif [ -d "/home/linuxbrew/.linuxbrew" ]; then
+        HOMEBREW_PREFIX="/home/linuxbrew/.linuxbrew"
+    else
+        HOMEBREW_PREFIX="/home/linuxbrew/.linuxbrew"
+    fi
+fi
 
 # uutils
 [ "$BLUEFIN_SHELL_ENABLE_UUTILSCOREUTILS" -eq 1 ] && PATH="${HOMEBREW_PREFIX}/opt/uutils-coreutils/libexec/uubin:$PATH"
@@ -54,7 +65,19 @@ HOMEBREW_PREFIX="${HOMEBREW_PREFIX:-/home/linuxbrew/.linuxbrew}"
 # Atuin allows these flags: "--disable-up-arrow" and/or "--disable-ctrl-r"
 ATUIN_INIT_FLAGS=${ATUIN_INIT_FLAGS:-""}
 
-BLING_SHELL="$(basename "$(readlink /proc/$$/exe)")"
+# Detect shell (macOS/Linux compatible)
+# 1. Try ps with pid
+if [ -n "$BASH_VERSION" ]; then
+    BLING_SHELL="bash"
+elif [ -n "$ZSH_VERSION" ]; then
+    BLING_SHELL="zsh"
+else
+    # Fallback detection
+    BLING_SHELL="$(ps -p $$ -o comm= 2>/dev/null | sed 's/^-//' | xargs basename 2>/dev/null)"
+    if [ -z "$BLING_SHELL" ]; then
+         BLING_SHELL="$(basename "$0")"
+    fi
+fi
 
 if [ "${BLING_SHELL}" = "bash" ]; then
     [ -f "/etc/profile.d/bash-preexec.sh" ] && . "/etc/profile.d/bash-preexec.sh"

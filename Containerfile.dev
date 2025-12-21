@@ -2,7 +2,7 @@
 # This image contains all build dependencies but no source code
 # Source code is mounted at runtime for fast iteration
 
-FROM registry.fedoraproject.org/fedora:43
+FROM registry.fedoraproject.org/fedora:rawhide
 
 # Install all dependencies in one layer
 RUN dnf install -y \
@@ -30,9 +30,6 @@ WORKDIR /home/linuxbrew
 RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && \
     echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc
 ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
-
-# Install bling dependencies via Homebrew
-RUN brew install eza bat starship zoxide
 
 # Switch back to root
 USER root

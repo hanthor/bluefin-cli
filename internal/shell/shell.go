@@ -61,8 +61,6 @@ var (
 const shellMaker = "# bluefin-cli shell-config"
 const blingMarker = "# bluefin-cli bling"
 
-
-// Toggle enables or disables bling for the specified shell
 func Toggle(shell string, enable bool) error {
 	var configFile string
 	var rcLine string
@@ -110,7 +108,7 @@ func Toggle(shell string, enable bool) error {
 			fmt.Println(infoStyle.Render(fmt.Sprintf("%s is already enabled for %s", shell, shell)))
 			return nil
 		}
-		
+
 		f, err := os.OpenFile(configFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 		if err != nil {
 			return err
@@ -140,7 +138,7 @@ func Toggle(shell string, enable bool) error {
 				newLines = append(newLines, line)
 			}
 		}
-		
+
 		output := strings.Join(newLines, "\n")
 		// Trim extra newlines at the end
 		output = strings.TrimRight(output, "\n") + "\n"
@@ -154,16 +152,13 @@ func Toggle(shell string, enable bool) error {
 	return nil
 }
 
-// Init returns the shell initialization script
 func Init(shell string, config *Config) (string, error) {
 	if config == nil {
-		// Should not happen if caller is correct, but fail-safe
 		config = DefaultConfig()
 	}
 
 	var sb strings.Builder
 
-	// 1. Generate Environment Variables
 	for _, tool := range Tools {
 		enabled := config.IsEnabled(tool.Name)
 
@@ -173,10 +168,9 @@ func Init(shell string, config *Config) (string, error) {
 			fmt.Fprintf(&sb, "export %s=%d\n", tool.GetEnvVar(), boolToInt(enabled))
 		}
 	}
-	
+
 	sb.WriteString("\n")
 
-	// 2. Append Shell Script
 	if shell == "fish" {
 		sb.WriteString(shellFishScript)
 	} else {
@@ -186,7 +180,6 @@ func Init(shell string, config *Config) (string, error) {
 	return sb.String(), nil
 }
 
-// CheckStatus returns whether bling is enabled for each shell
 func CheckStatus() map[string]bool {
 	status := make(map[string]bool)
 	shells := []string{"bash", "zsh", "fish"}
@@ -209,15 +202,12 @@ func CheckStatus() map[string]bool {
 			continue
 		}
 
-		// Check for new marker OR old marker (for compatibility/transitions)
-		// We'll consider it enabled if either is present, but Toggle will write the new one.
 		status[shell] = strings.Contains(string(content), shellMaker) || strings.Contains(string(content), "# bluefin-cli bling")
 	}
 
 	return status
 }
 
-// CheckDependencies verifies required tools are installed
 func CheckDependencies() map[string]bool {
 	status := make(map[string]bool)
 
@@ -227,4 +217,18 @@ func CheckDependencies() map[string]bool {
 	}
 
 	return status
+}
+
+// GetInstalledShells returns a list of shells that are available in the PATH
+func GetInstalledShells() []string {
+	var installed []string
+	shells := []string{"bash", "zsh", "fish"}
+
+	for _, s := range shells {
+		if _, err := exec.LookPath(s); err == nil {
+			installed = append(installed, s)
+		}
+	}
+
+	return installed
 }

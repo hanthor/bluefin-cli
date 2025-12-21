@@ -3,12 +3,13 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strings"
 	"path/filepath"
+	"strings"
+
 	"github.com/charmbracelet/huh"
-	"github.com/spf13/cobra"
 	"github.com/hanthor/bluefin-cli/internal/shell"
 	"github.com/hanthor/bluefin-cli/internal/tui"
+	"github.com/spf13/cobra"
 )
 
 var shellCmd = &cobra.Command{
@@ -107,49 +108,47 @@ func shellShellsMenu() error {
 	tui.RenderHeader("Bluefin CLI", "Main Menu > Shell > Shells")
 
 	status := shell.CheckStatus()
-	
-	// Pre-select shells that currently have bling enabled
+	installedShells := shell.GetInstalledShells()
+
 	var selected []string
-	for _, shell := range []string{"bash", "zsh", "fish"} {
-		if status[shell] {
-			selected = append(selected, shell)
+	for _, s := range installedShells {
+		if status[s] {
+			selected = append(selected, s)
 		}
 	}
-	
-	// Store initial state
+
 	initialSelected := make(map[string]bool)
 	for _, sh := range selected {
 		initialSelected[sh] = true
 	}
-	
+
+	// Build options dynamically based on installed shells
+	var options []huh.Option[string]
+	for _, s := range installedShells {
+		options = append(options, huh.NewOption(s, s))
+	}
+
 	if err := huh.NewForm(
 		huh.NewGroup(
 			huh.NewMultiSelect[string]().
 				Title("Manage other shells").
 				Description("Selected = ON, Deselected = OFF").
-				Options(
-					huh.NewOption("bash", "bash"),
-					huh.NewOption("zsh", "zsh"),
-					huh.NewOption("fish", "fish"),
-				).
+				Options(options...).
 				Value(&selected),
 		),
 	).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap()).Run(); err != nil {
 		return nil // Interrupted - go back to main menu
 	}
 
-	// Build map of final selections
 	finalSelected := make(map[string]bool)
 	for _, sh := range selected {
 		finalSelected[sh] = true
 	}
 
-	// Apply changes for shells that changed state
-	for _, shName := range []string{"bash", "zsh", "fish"} {
+	for _, shName := range installedShells {
 		wasEnabled := initialSelected[shName]
 		isEnabled := finalSelected[shName]
-		
-		// Only toggle if state changed
+
 		if wasEnabled != isEnabled {
 			if err := shell.Toggle(shName, isEnabled); err != nil {
 				return err
@@ -175,7 +174,7 @@ func configureShellTools() error {
 			selected = append(selected, tool.Name)
 		}
 	}
-	
+
 	var options []huh.Option[string]
 	for _, tool := range shell.Tools {
 		label := fmt.Sprintf("%s (%s)", tool.Name, tool.Description)
@@ -199,9 +198,7 @@ func configureShellTools() error {
 		return fmt.Errorf("form error: %w", err)
 	}
 
-	// Update config
-	newCfg := shell.DefaultConfig() 
-	// Create a set for selected tools
+	newCfg := shell.DefaultConfig()
 	selectedSet := make(map[string]bool)
 	for _, s := range selected {
 		selectedSet[s] = true
@@ -235,4 +232,3 @@ func init() {
 	rootCmd.AddCommand(shellCmd)
 	shellCmd.AddCommand(shellConfigCmd)
 }
-

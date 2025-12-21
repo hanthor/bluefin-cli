@@ -58,12 +58,17 @@ if test "$BLUEFIN_SHELL_ENABLE_BAT" -eq 1
     alias cat='bat --style=plain --pager=never' 2>/dev/null
 end
 
-# uutils
-# We assume HOMEBREW_PREFIX is set by brew shellenv or similar, otherwise fallback
 if not set -q HOMEBREW_PREFIX
-    set HOMEBREW_PREFIX "/home/linuxbrew/.linuxbrew"
+    if test -d "/opt/homebrew"
+        set HOMEBREW_PREFIX "/opt/homebrew"
+    else if test -d "/usr/local/Homebrew"
+        set HOMEBREW_PREFIX "/usr/local"
+    else
+        set HOMEBREW_PREFIX "/home/linuxbrew/.linuxbrew"
+    end
 end
 
+# uutils
 test "$BLUEFIN_SHELL_ENABLE_UUTILSCOREUTILS" -eq 1; and fish_add_path --prepend "$HOMEBREW_PREFIX/opt/uutils-coreutils/libexec/uubin"
 test "$BLUEFIN_SHELL_ENABLE_UUTILSFINDUTILS" -eq 1; and fish_add_path --prepend "$HOMEBREW_PREFIX/opt/uutils-findutils/libexec/uubin"
 test "$BLUEFIN_SHELL_ENABLE_UUTILSDIFFUTILS" -eq 1; and fish_add_path --prepend "$HOMEBREW_PREFIX/opt/uutils-diffutils/libexec/uubin" 

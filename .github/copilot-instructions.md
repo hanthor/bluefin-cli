@@ -30,7 +30,7 @@ bluefin-cli/
 ```
 
 ## Implemented Features
-✅ **Bling Command** - Toggle shell enhancements (eza, bat, ugrep, zoxide, atuin, starship)
+✅ **shell Command** - Toggle shell enhancements (eza, bat, ugrep, zoxide, atuin, starship)
 ✅ **MOTD System** - Message of the day with tips and system info
 ✅ **Bundle Installer** - Install ai, cli, fonts, k8s bundles from Universal Blue
 ✅ **Status Command** - Show configuration and tool installation status
