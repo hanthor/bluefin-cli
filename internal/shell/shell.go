@@ -20,19 +20,22 @@ func InstallTools(cfg *Config) {
 			}
 		}
 	}
+
+	if cfg.IsEnabled("Motd") {
+		if err := ensureTool("glow", "glow"); err != nil {
+			fmt.Println(errorStyle.Render(fmt.Sprintf("Warning: Failed to install glow: %v", err)))
+		}
+	}
 }
 
-// ensureTool checks if a tool is available and installs it via brew if missing
 func ensureTool(binary, pkg string) error {
-	// Check if tool is already installed
 	if _, err := exec.LookPath(binary); err == nil {
 		return nil
 	}
 
-	// Not found, check if brew is available
 	if _, err := exec.LookPath("brew"); err != nil {
 		fmt.Println(errorStyle.Render(fmt.Sprintf("Warning: Homebrew not found. Cannot auto-install %s.", pkg)))
-		return nil // Don't fail config generation
+		return nil
 	}
 
 	fmt.Println(infoStyle.Render(fmt.Sprintf("⬇️  Installing %s via Homebrew...", pkg)))
