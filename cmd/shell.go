@@ -74,6 +74,7 @@ func runShellMenu() error {
 					Options(
 						huh.NewOption(toggleLabel, "toggle_current"),
 						huh.NewOption("Configure Components ❯", "components"),
+						huh.NewOption("📰 MOTD Settings ❯", "motd"),
 						huh.NewOption("Enable/Disable for other shells ❯", "shells"),
 						huh.NewOption("Exit to Main Menu", "exit"),
 					).
@@ -95,6 +96,10 @@ func runShellMenu() error {
 			}
 		case "components":
 			if err := configureShellTools(); err != nil {
+				return err
+			}
+		case "motd":
+			if err := runMotdMenu(); err != nil {
 				return err
 			}
 		case "exit":

@@ -35,7 +35,6 @@ var menuCmd = &cobra.Command{
 			opts := []huh.Option[string]{
 				huh.NewOption("📊 Status", "status"),
 				huh.NewOption(shellLabel+" ❯", "shell"),
-				huh.NewOption("📰 MOTD ❯", "motd"),
 				huh.NewOption("📦 Install Apps ❯", "bundles"),
 				huh.NewOption("🖼  Wallpapers ❯", "wallpapers"),
 				huh.NewOption("🚀 Starship Theme ❯", "starship"),
@@ -67,10 +66,7 @@ var menuCmd = &cobra.Command{
 				if err := runShellMenu(); err != nil {
 					return err
 				}
-			case "motd":
-				if err := runMotdMenu(); err != nil {
-					return err
-				}
+
 			case "bundles":
 				if err := runBundlesMenu(); err != nil {
 					return err

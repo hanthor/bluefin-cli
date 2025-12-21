@@ -11,7 +11,6 @@ import (
 var (
 	// Flags are now dynamic, stored in a map
 	toolFlags = make(map[string]*bool)
-	motdFlag  bool = true // Default to true matching current behavior
 )
 
 var initCmd = &cobra.Command{
@@ -58,8 +57,8 @@ Fish (~/.config/fish/config.fish):
 		fmt.Println(script)
 		fmt.Println()
 
-		// Add MOTD hook if enabled
-		if motdFlag {
+		// Add MOTD hook if enabled in config
+		if config.IsEnabled("Motd") {
 			switch shellName {
 			case "bash", "zsh":
 				// Only run MOTD if interactive
@@ -89,5 +88,8 @@ func init() {
 		toolFlags[flagName] = initCmd.Flags().Bool(flagName, tool.Default, fmt.Sprintf("Enable %s", tool.Name))
 	}
 
-	initCmd.Flags().BoolVar(&motdFlag, "motd", true, "Enable motd")
+	// MOTD is managed separately from tools
+	motdDefault := true
+	toolFlags["motd"] = &motdDefault
+	initCmd.Flags().BoolVar(toolFlags["motd"], "motd", true, "Enable MOTD")
 }

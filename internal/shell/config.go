@@ -17,6 +17,10 @@ func (c Config) IsEnabled(toolName string) bool {
 	if enabled, ok := c[key]; ok {
 		return enabled
 	}
+	// Special case: MOTD defaults to true
+	if key == "motd" {
+		return true
+	}
 	for _, t := range Tools {
 		if t.Name == toolName {
 			return t.Default
@@ -36,6 +40,9 @@ func DefaultConfig() *Config {
 	for _, tool := range Tools {
 		cfg[strings.ToLower(tool.Name)] = tool.Default
 	}
+
+	// MOTD is enabled by default (managed separately from tools)
+	cfg["motd"] = true
 
 	return &cfg
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 	"github.com/hanthor/bluefin-cli/internal/motd"
+	"github.com/hanthor/bluefin-cli/internal/shell"
 	"github.com/hanthor/bluefin-cli/internal/tui"
 )
 
@@ -94,15 +95,30 @@ func init() {
 func runMotdMenu() error {
 	for {
 		tui.ClearScreen()
-		tui.RenderHeader("Bluefin CLI", "Main Menu > MOTD")
+		tui.RenderHeader("Bluefin CLI", "Main Menu > Shell > MOTD")
+
+		// Load config to check if MOTD is enabled
+		cfg, err := shell.LoadConfig()
+		if err != nil {
+			cfg = shell.DefaultConfig()
+		}
+		isEnabled := cfg.IsEnabled("Motd")
+
+		// Build toggle label based on current state
+		toggleLabel := "Enable MOTD"
+		if isEnabled {
+			toggleLabel = "Disable MOTD"
+		}
+
 		var action string
 		if err := huh.NewForm(
 			huh.NewGroup(
 				huh.NewSelect[string]().
 					Title("MOTD – What do you want to do?").
 					Options(
+						huh.NewOption(toggleLabel, "toggle_motd"),
 						huh.NewOption("Show MOTD", "show"),
-						huh.NewOption("Toggle for shells ❯", "toggle"),
+						huh.NewOption("Exit to Shell Menu", "exit"),
 					).
 					Value(&action),
 			),
@@ -110,59 +126,25 @@ func runMotdMenu() error {
 			return nil
 		}
 
-		if action == "show" {
+		switch action {
+		case "toggle_motd":
+			cfg.SetEnabled("Motd", !isEnabled)
+			if err := shell.SaveConfig(cfg); err != nil {
+				return fmt.Errorf("failed to save config: %w", err)
+			}
+			if !isEnabled {
+				fmt.Println(tui.SuccessStyle.Render("✓ MOTD enabled"))
+			} else {
+				fmt.Println(tui.SuccessStyle.Render("✓ MOTD disabled"))
+			}
+			tui.Pause()
+		case "show":
 			if err := motd.Show(); err != nil {
 				return err
 			}
-			continue
+			tui.Pause()
+		case "exit":
+			return nil
 		}
-
-		status := motd.CheckStatus()
-		
-		var selected []string
-		for _, shell := range []string{"bash", "zsh", "fish"} {
-			if status[shell] {
-				selected = append(selected, shell)
-			}
-		}
-		
-		initialSelected := make(map[string]bool)
-		for _, sh := range selected {
-			initialSelected[sh] = true
-		}
-		
-		if err := huh.NewForm(
-			huh.NewGroup(
-				huh.NewMultiSelect[string]().
-					Title("Toggle MOTD for shells").
-					Description("Selected = ON, Deselected = OFF (ctrl+c to cancel)").
-					Options(
-						huh.NewOption("bash", "bash"),
-						huh.NewOption("zsh", "zsh"),
-						huh.NewOption("fish", "fish"),
-					).
-					Value(&selected),
-			),
-		).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap()).Run(); err != nil {
-			continue
-		}
-
-		finalSelected := make(map[string]bool)
-		for _, sh := range selected {
-			finalSelected[sh] = true
-		}
-
-		for _, shell := range []string{"bash", "zsh", "fish"} {
-			wasEnabled := initialSelected[shell]
-			isEnabled := finalSelected[shell]
-			
-			if wasEnabled != isEnabled {
-				if err := motd.Toggle(shell, isEnabled); err != nil {
-					return err
-				}
-			}
-		}
-		
-		return nil
 	}
 }
