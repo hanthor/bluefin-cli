@@ -2,7 +2,7 @@
 
 # Check if Bluefin shell has already been sourced so that we dont break atuin. https://github.com/atuinsh/atuin/issues/380#issuecomment-1594014644
 [ "${SOURCED_BLUEFIN_SHELL:-0}" -eq 1 ] && return 
-SOURCED_SHELLIN_SHELL=1
+SOURCED_BLUEFIN_SHELL=1
 
 # Default to enabled if variable is not set (backwards compatibility)
 : "${BLUEFIN_SHELL_ENABLE_EZA:=1}"
@@ -45,15 +45,9 @@ fi
 
 HOMEBREW_PREFIX="${HOMEBREW_PREFIX:-}"
 if [ -z "$HOMEBREW_PREFIX" ]; then
-    if [ -x "/opt/homebrew/bin/brew" ]; then
-        HOMEBREW_PREFIX="/opt/homebrew"
-    elif [ -x "/usr/local/bin/brew" ]; then
-        HOMEBREW_PREFIX="/usr/local"
-    elif [ -d "/home/linuxbrew/.linuxbrew" ]; then
-        HOMEBREW_PREFIX="/home/linuxbrew/.linuxbrew"
-    else
-        HOMEBREW_PREFIX="/home/linuxbrew/.linuxbrew"
-    fi
+    [ -x "/opt/homebrew/bin/brew" ] && HOMEBREW_PREFIX="/opt/homebrew" || \
+    [ -x "/usr/local/bin/brew" ] && HOMEBREW_PREFIX="/usr/local" || \
+    HOMEBREW_PREFIX="/home/linuxbrew/.linuxbrew"
 fi
 
 # uutils
@@ -65,19 +59,9 @@ fi
 # Atuin allows these flags: "--disable-up-arrow" and/or "--disable-ctrl-r"
 ATUIN_INIT_FLAGS=${ATUIN_INIT_FLAGS:-""}
 
-# Detect shell (macOS/Linux compatible)
-# 1. Try ps with pid
-if [ -n "$BASH_VERSION" ]; then
-    BLING_SHELL="bash"
-elif [ -n "$ZSH_VERSION" ]; then
-    BLING_SHELL="zsh"
-else
-    # Fallback detection
-    BLING_SHELL="$(ps -p $$ -o comm= 2>/dev/null | sed 's/^-//' | xargs basename 2>/dev/null)"
-    if [ -z "$BLING_SHELL" ]; then
-         BLING_SHELL="$(basename "$0")"
-    fi
-fi
+# Detect shell
+[ -n "$BASH_VERSION" ] && BLING_SHELL="bash"
+[ -n "$ZSH_VERSION" ] && BLING_SHELL="zsh"
 
 if [ "${BLING_SHELL}" = "bash" ]; then
     [ -f "/etc/profile.d/bash-preexec.sh" ] && . "/etc/profile.d/bash-preexec.sh"
