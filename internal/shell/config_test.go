@@ -12,7 +12,7 @@ func TestConfigData(t *testing.T) {
 	defer os.Unsetenv("HOMEBREW_PREFIX")
 	
 	// Test Default Config
-	cfg := DefaultConfig()
+	cfg := DefaultConfig("bash")
 	if !cfg.IsEnabled("Eza") {
 		t.Error("Default config should have Eza enabled")
 	}
@@ -23,7 +23,7 @@ func TestConfigData(t *testing.T) {
 		t.Fatalf("Failed to save config: %v", err)
 	}
 
-	loadedCfg, err := LoadConfig()
+	loadedCfg, err := LoadConfig("bash")
 	if err != nil {
 		t.Fatalf("Failed to load config: %v", err)
 	}

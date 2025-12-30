@@ -55,7 +55,7 @@ func runShellMenu() error {
 
 		currentShellPath := os.Getenv("SHELL")
 		currentShell := filepath.Base(currentShellPath)
-		if currentShell == "" {
+	if currentShell == "" || currentShell == "." {
 			currentShell = "bash" // fallback
 		}
 
@@ -170,6 +170,9 @@ func configureShellTools() error {
 
 	currentShellPath := os.Getenv("SHELL")
 	currentShell := filepath.Base(currentShellPath)
+	if currentShell == "" || currentShell == "." {
+		currentShell = "bash" // fallback
+	}
 
 	cfg, err := shell.LoadConfig(currentShell)
 	if err != nil {

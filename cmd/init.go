@@ -33,9 +33,9 @@ Fish (~/.config/fish/config.fish):
 	RunE: func(cmd *cobra.Command, args []string) error {
 		shellName := args[0]
 		
-		config, err := shell.LoadConfig()
+		config, err := shell.LoadConfig(shellName)
 		if err != nil {
-			config = shell.DefaultConfig()
+			config = shell.DefaultConfig(shellName)
 		}
 
 		for _, tool := range shell.Tools {

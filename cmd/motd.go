@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
@@ -98,9 +100,16 @@ func runMotdMenu() error {
 		tui.RenderHeader("Bluefin CLI", "Main Menu > Shell > MOTD")
 
 		// Load config to check if MOTD is enabled
-		cfg, err := shell.LoadConfig()
+		// Determine shell (fallback to bash if unknown, as this affects defaults)
+		currentShellPath := os.Getenv("SHELL")
+		currentShell := filepath.Base(currentShellPath)
+		if currentShell == "" || currentShell == "." {
+			currentShell = "bash"
+		}
+
+		cfg, err := shell.LoadConfig(currentShell)
 		if err != nil {
-			cfg = shell.DefaultConfig()
+			cfg = shell.DefaultConfig(currentShell)
 		}
 		isEnabled := cfg.IsEnabled("Motd")
 
