@@ -34,11 +34,15 @@ func (c Config) SetEnabled(toolName string, enabled bool) {
 	c[key] = enabled
 }
 
-func DefaultConfig() *Config {
+func DefaultConfig(shell string) *Config {
 	cfg := make(Config)
 
 	for _, tool := range Tools {
-		cfg[strings.ToLower(tool.Name)] = tool.Default
+		def := tool.Default
+		if val, ok := tool.ShellDefaults[shell]; ok {
+			def = val
+		}
+		cfg[strings.ToLower(tool.Name)] = def
 	}
 
 	// MOTD is enabled by default (managed separately from tools)
@@ -47,14 +51,14 @@ func DefaultConfig() *Config {
 	return &cfg
 }
 
-func LoadConfig() (*Config, error) {
+func LoadConfig(shell string) (*Config, error) {
 	configPath, err := getConfigPath()
 	if err != nil {
 		return nil, err
 	}
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return DefaultConfig(), nil
+		return DefaultConfig(shell), nil
 	}
 
 	content, err := os.ReadFile(configPath)

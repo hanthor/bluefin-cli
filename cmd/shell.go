@@ -168,7 +168,10 @@ func configureShellTools() error {
 	tui.ClearScreen()
 	tui.RenderHeader("Bluefin CLI", "Main Menu > Shell > Components")
 
-	cfg, err := shell.LoadConfig()
+	currentShellPath := os.Getenv("SHELL")
+	currentShell := filepath.Base(currentShellPath)
+
+	cfg, err := shell.LoadConfig(currentShell)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
@@ -203,7 +206,7 @@ func configureShellTools() error {
 		return fmt.Errorf("form error: %w", err)
 	}
 
-	newCfg := shell.DefaultConfig()
+	newCfg := shell.DefaultConfig(currentShell)
 	selectedSet := make(map[string]bool)
 	for _, s := range selected {
 		selectedSet[s] = true

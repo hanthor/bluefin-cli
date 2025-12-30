@@ -8,11 +8,39 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 )
 
 // InstallTools iterates through the config and installs enabled tools
 func InstallTools(cfg *Config) {
+	// First check if we need to install anything
+	needsInstall := false
+	for _, tool := range Tools {
+		if cfg.IsEnabled(tool.Name) {
+			if _, err := exec.LookPath(tool.Binary); err != nil {
+				needsInstall = true
+				break
+			}
+		}
+	}
+
+	if cfg.IsEnabled("Motd") {
+		if _, err := exec.LookPath("glow"); err != nil {
+			needsInstall = true
+		}
+	}
+
+	if !needsInstall {
+		return
+	}
+
+	// Ensure Homebrew is available
+	if err := ensureHomebrew(); err != nil {
+		fmt.Println(errorStyle.Render(fmt.Sprintf("Skipping tool installation: %v", err)))
+		return
+	}
+
 	for _, tool := range Tools {
 		if cfg.IsEnabled(tool.Name) {
 			if err := ensureTool(tool.Binary, tool.Pkg); err != nil {
@@ -28,14 +56,63 @@ func InstallTools(cfg *Config) {
 	}
 }
 
+func ensureHomebrew() error {
+	if _, err := exec.LookPath("brew"); err == nil {
+		return nil
+	}
+
+	commonPaths := []string{"/home/linuxbrew/.linuxbrew/bin/brew", "/opt/homebrew/bin/brew", "/usr/local/bin/brew"}
+	for _, p := range commonPaths {
+		if _, err := os.Stat(p); err == nil {
+			path := os.Getenv("PATH")
+			os.Setenv("PATH", path+string(os.PathListSeparator)+filepath.Dir(p))
+			return nil
+		}
+	}
+
+	fmt.Println(infoStyle.Render("Homebrew is missing. It is required to install enabled components."))
+	var install bool
+	err := huh.NewConfirm().
+		Title("Would you like to install Homebrew?").
+		Value(&install).
+		Run()
+	if err != nil {
+		return err
+	}
+
+	if !install {
+		return fmt.Errorf("homebrew installation declined")
+	}
+
+	fmt.Println(infoStyle.Render("⬇️  Installing Homebrew..."))
+	
+	cmd := exec.Command("/bin/bash", "-c", "curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | bash")
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install homebrew: %w", err)
+	}
+
+	for _, p := range commonPaths {
+		if _, err := os.Stat(p); err == nil {
+			path := os.Getenv("PATH")
+			os.Setenv("PATH", path+string(os.PathListSeparator)+filepath.Dir(p))
+			fmt.Println(successStyle.Render("✓ Homebrew installed and added to PATH for this session."))
+			return nil
+		}
+	}
+	
+	return fmt.Errorf("homebrew installed but not found in expected locations")
+}
+
 func ensureTool(binary, pkg string) error {
 	if _, err := exec.LookPath(binary); err == nil {
 		return nil
 	}
 
 	if _, err := exec.LookPath("brew"); err != nil {
-		fmt.Println(errorStyle.Render(fmt.Sprintf("Warning: Homebrew not found. Cannot auto-install %s.", pkg)))
-		return nil
+		return fmt.Errorf("brew not found")
 	}
 
 	fmt.Println(infoStyle.Render(fmt.Sprintf("⬇️  Installing %s via Homebrew...", pkg)))
@@ -152,12 +229,16 @@ func Toggle(shell string, enable bool) error {
 		fmt.Println(successStyle.Render(fmt.Sprintf("✓ Disabled shell experience for %s", shell)))
 	}
 
+	if cfg, err := LoadConfig(shell); err == nil {
+		InstallTools(cfg)
+	}
+
 	return nil
 }
 
 func Init(shell string, config *Config) (string, error) {
 	if config == nil {
-		config = DefaultConfig()
+		config = DefaultConfig(shell)
 	}
 
 	var sb strings.Builder
