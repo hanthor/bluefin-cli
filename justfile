@@ -287,11 +287,11 @@ update-resources:
     echo "Updating wallpaper cask list from ublue-os/homebrew-tap..."
     curl -sSfL "https://api.github.com/repos/ublue-os/homebrew-tap/contents/Casks" \
         | python3 -c "
-import sys, json
-entries = json.load(sys.stdin)
-casks = sorted(e['name'].removesuffix('.rb') for e in entries if e['type']=='file' and e['name'].endswith('.rb') and 'wallpaper' in e['name'].lower())
-print(json.dumps(casks, indent=2))
-" > internal/install/resources/wallpaper-casks.json
+        import sys, json
+        entries = json.load(sys.stdin)
+        casks = sorted(e['name'].removesuffix('.rb') for e in entries if e['type']=='file' and e['name'].endswith('.rb') and 'wallpaper' in e['name'].lower())
+        print(json.dumps(casks, indent=2))
+        " > internal/install/resources/wallpaper-casks.json
     echo "  -> wallpaper-casks.json"
     echo "Update complete!"
 
