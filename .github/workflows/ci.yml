@@ -27,7 +27,7 @@ jobs:
       run: go build -o bluefin-cli .
 
     - name: Run unit tests
-      run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+      run: go test -tags extra -v -race -coverprofile=coverage.txt -covermode=atomic ./...
       
     - name: Upload coverage
       uses: codecov/codecov-action@v7

@@ -49,8 +49,8 @@ func init() {
 	rootCmd.AddCommand(installCmd)
 	rootCmd.AddCommand(uninstallCmd)
 	installCmd.AddCommand(installListCmd)
-	rootCmd.AddCommand(installWallpapersCmd)
-	rootCmd.AddCommand(installWallpapersCleanupCmd)
+	installCmd.AddCommand(installWallpapersCmd)
+	installWallpapersCmd.AddCommand(installWallpapersCleanupCmd)
 
 	installWallpapersCmd.Flags().Bool("non-interactive", false, "Skip prompts and use flag values")
 	installWallpapersCmd.Flags().Bool("yes", false, "Non-interactive shortcut: run sunset setup after install")
