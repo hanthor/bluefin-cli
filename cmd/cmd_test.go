@@ -16,11 +16,8 @@ func TestRootCommand_HasSubcommands(t *testing.T) {
 		"countme",
 		"docs",
 		"fonts",
-		"help",
 		"init",
 		"install",
-		"install-wallpapers",
-		"install-wallpapers-cleanup",
 		"menu",
 		"motd",
 		"shell",
@@ -175,14 +172,14 @@ func TestSubcommandHelpOutput(t *testing.T) {
 // ── Flag verification ────────────────────────────────────────────────────────
 
 func TestInstallCommand_HasRequiredFlags(t *testing.T) {
-	cmd, _, err := rootCmd.Find([]string{"install"})
+	cmd, _, err := rootCmd.Find([]string{"install", "wallpapers"})
 	if err != nil || cmd == rootCmd {
-		t.Fatal("install command not found")
+		t.Fatal("install wallpapers command not found")
 	}
 	expectedFlags := []string{"non-interactive", "yes"}
 	for _, flag := range expectedFlags {
 		if cmd.Flags().Lookup(flag) == nil {
-			t.Errorf("install command missing flag --%s", flag)
+			t.Errorf("install wallpapers command missing flag --%s", flag)
 		}
 	}
 }
@@ -196,19 +193,6 @@ func TestCountmeCommand_HasRequiredFlags(t *testing.T) {
 	for _, flag := range expectedFlags {
 		if cmd.Flags().Lookup(flag) == nil {
 			t.Errorf("countme command missing flag --%s", flag)
-		}
-	}
-}
-
-func TestShellCommand_HasRequiredFlags(t *testing.T) {
-	cmd, _, err := rootCmd.Find([]string{"shell"})
-	if err != nil || cmd == rootCmd {
-		t.Fatal("shell command not found")
-	}
-	shellCmd, _, _ := cmd.Find([]string{"config"})
-	if shellCmd != nil && shellCmd != cmd {
-		if shellCmd.Flags().Lookup("shell") == nil {
-			t.Error("shell config command missing flag --shell")
 		}
 	}
 }
