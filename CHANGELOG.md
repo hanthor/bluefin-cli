@@ -26,6 +26,34 @@
 
 * dramatically speed up PowerShell profile loading (~2900ms → ~140ms) ([da46508](https://github.com/tuna-os/bluefin-cli/commit/da4650857cffab81cd2b9ce37219382bafe72304))
 
+# [0.7.0](https://github.com/tuna-os/bluefin-cli/compare/v0.6.4...v0.7.0) (2026-07-21)
+
+
+### Bug Fixes
+
+* **ci:** indent Python code in justfile to avoid parser error ([6f0e54f](https://github.com/tuna-os/bluefin-cli/commit/6f0e54f180f4b540cae402938a347940a0851ba8))
+* **ci:** serialize Automated Release runs to stop tag-collision races ([#80](https://github.com/tuna-os/bluefin-cli/issues/80)) ([6541253](https://github.com/tuna-os/bluefin-cli/commit/6541253aac7a8b54dfca50acd9ecfe02aad43b2f)), closes [#78](https://github.com/tuna-os/bluefin-cli/issues/78)
+* **ci:** use single-line Python to avoid justfile parsing issues ([0e079dd](https://github.com/tuna-os/bluefin-cli/commit/0e079dd5bae32166ff0b383cbe21c004d9ce1890))
+* correct PowerShell array match logic in windows smoke check ([#58](https://github.com/tuna-os/bluefin-cli/issues/58)) ([afef3e8](https://github.com/tuna-os/bluefin-cli/commit/afef3e8264dda400db5e902b78ded54ae60be90e))
+* correct wallpaper command nesting and align tests with real command tree ([56c2bff](https://github.com/tuna-os/bluefin-cli/commit/56c2bff1a9a514d0c1e05825b403c44ea05a495a))
+* **deps:** update module charm.land/bubbles/v2 to v2.1.0 ([#54](https://github.com/tuna-os/bluefin-cli/issues/54)) ([feec7be](https://github.com/tuna-os/bluefin-cli/commit/feec7bebd22286abe8c91b8c2145d875236b120a))
+* **deps:** update module charm.land/bubbles/v2 to v2.1.1 ([#81](https://github.com/tuna-os/bluefin-cli/issues/81)) ([9835f81](https://github.com/tuna-os/bluefin-cli/commit/9835f8188d8b6ba2683632146dfa54c1a1edb85f))
+* **deps:** update module charm.land/lipgloss/v2 to v2.0.5 ([#82](https://github.com/tuna-os/bluefin-cli/issues/82)) ([ce5f5f7](https://github.com/tuna-os/bluefin-cli/commit/ce5f5f7cc009933ed9e2c91454ce317d765eabfb))
+* **deps:** update module golang.org/x/sys to v0.46.0 ([#55](https://github.com/tuna-os/bluefin-cli/issues/55)) ([cf9ab11](https://github.com/tuna-os/bluefin-cli/commit/cf9ab11fb28a7599e1a275ccd0ea6efdbfb103dc))
+* **deps:** update module golang.org/x/sys to v0.47.0 ([#83](https://github.com/tuna-os/bluefin-cli/issues/83)) ([a35ea5e](https://github.com/tuna-os/bluefin-cli/commit/a35ea5ea8c56f276320d1834d929a84eac250150))
+* update Go module path from hanthor to tuna-os ([#522](https://github.com/tuna-os/bluefin-cli/issues/522)) ([e9a7aab](https://github.com/tuna-os/bluefin-cli/commit/e9a7aabe49b3e35a3b01a0446dc5a2bb83dd7cbc))
+
+
+### Features
+
+* embed wallpaper cask list instead of fetching via brew at runtime ([5ef4462](https://github.com/tuna-os/bluefin-cli/commit/5ef4462684db07f34b79b29e7a29c8dacb131c57))
+* per-category install menu, GoReleaser winget automation, drop bbrew ([#49](https://github.com/tuna-os/bluefin-cli/issues/49)) ([38dcdd3](https://github.com/tuna-os/bluefin-cli/commit/38dcdd330f3b1198bf6b0ff432198da967f60623))
+
+
+### Performance Improvements
+
+* dramatically speed up PowerShell profile loading (~2900ms → ~140ms) ([da46508](https://github.com/tuna-os/bluefin-cli/commit/da4650857cffab81cd2b9ce37219382bafe72304))
+
 # [0.7.0](https://github.com/tuna-os/bluefin-cli/compare/v0.6.4...v0.7.0) (2026-07-20)
 
 
