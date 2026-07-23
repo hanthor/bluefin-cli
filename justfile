@@ -318,3 +318,6 @@ verify:
     GOTMPDIR=$PWD/tmp/gotmp go test -tags extra ./...
     rm -f bluefin-cli
     just tui-smoke
+    go build -tags extra -o tmp/bfc-state .
+    ./scripts/tui-state.sh tmp/bfc-state
+    rm -f tmp/bfc-state

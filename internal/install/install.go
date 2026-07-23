@@ -127,13 +127,11 @@ func MergeBrewfiles(paths []string) (string, func(), error) {
 		return "", func() {}, fmt.Errorf("no brewfiles to merge")
 	}
 
-	tmpDir := os.TempDir()
-	mergedPath := filepath.Join(tmpDir, "merged.Brewfile")
-
-	f, err := os.Create(mergedPath)
+	f, err := os.CreateTemp("", "bluefin-merged-*.Brewfile")
 	if err != nil {
 		return "", func() {}, err
 	}
+	mergedPath := f.Name()
 	defer func() {
 		_ = f.Close()
 	}()

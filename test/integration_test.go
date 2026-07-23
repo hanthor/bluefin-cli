@@ -140,6 +140,15 @@ func runCommand(t *testing.T, args ...string) (string, error) {
 	return stripAnsi(string(output)), err
 }
 
+// commandWithEnv builds a binary invocation with extra environment entries
+// layered over the current environment (later entries win).
+func commandWithEnv(t *testing.T, extraEnv []string, args ...string) *exec.Cmd {
+	t.Helper()
+	cmd := exec.Command(getBinaryPath(), args...)
+	cmd.Env = append(os.Environ(), extraEnv...)
+	return cmd
+}
+
 func fileContains(t *testing.T, filepath, pattern string) bool {
 	content, err := os.ReadFile(filepath)
 	if err != nil {
