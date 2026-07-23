@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/fang"
 	"github.com/spf13/cobra"
 	"github.com/tuna-os/bluefin-cli/internal/countme"
+	"github.com/tuna-os/bluefin-cli/internal/status"
 )
 
 var (
@@ -57,4 +58,5 @@ func Execute() error {
 
 func init() {
 	rootCmd.SetVersionTemplate(fmt.Sprintf("bluefin-cli version %s\n", version))
+	status.AppVersion = version
 }

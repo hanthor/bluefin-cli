@@ -157,3 +157,61 @@ exit 0
 		t.Errorf("no package lines reached brew:\n%s", got)
 	}
 }
+
+// TestProfileRoundTripRestoresState: export must capture real state, and
+// import must drive a drifted machine back to it — rc lines, config, theme.
+func TestProfileRoundTripRestoresState(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix shells only")
+	}
+	home := os.Getenv("HOME")
+	rc := filepath.Join(home, ".bashrc")
+	if err := os.WriteFile(rc, []byte("# base\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Establish a distinctive state.
+	mustRun := func(args ...string) {
+		t.Helper()
+		if out, err := runCommand(t, args...); err != nil {
+			t.Fatalf("%v failed: %v\n%s", args, err, out)
+		}
+	}
+	mustRun("shell", "bash", "on")
+	mustRun("theme", "mocha")
+
+	profilePath := filepath.Join(t.TempDir(), "profile.json")
+	mustRun("profile", "export", profilePath)
+	if !fileContains(t, profilePath, `"bash"`) || !fileContains(t, profilePath, `"flavor": "mocha"`) {
+		data, _ := os.ReadFile(profilePath)
+		t.Fatalf("export did not capture state:\n%s", data)
+	}
+
+	// Drift away from it.
+	mustRun("shell", "bash", "off")
+	mustRun("theme", "auto")
+	if fileContains(t, rc, "bluefin-cli init") {
+		t.Fatal("precondition: drift did not disable bash")
+	}
+
+	// Import must restore the captured state on disk.
+	mustRun("profile", "import", profilePath)
+	if !fileContains(t, rc, "bluefin-cli init") {
+		t.Error("import did not restore the bash init line")
+	}
+	cfg := filepath.Join(home, ".config", "bluefin-cli", "config.yaml")
+	if !fileContains(t, cfg, "flavor: mocha") {
+		t.Error("import did not restore the theme flavor")
+	}
+	out, err := runCommand(t, "status")
+	if err != nil {
+		t.Fatalf("status failed: %v", err)
+	}
+	if !strings.Contains(out, "bash: enabled") {
+		t.Errorf("status disagrees after import:\n%s", out)
+	}
+
+	// Leave the sandbox tidy for other tests.
+	mustRun("shell", "bash", "off")
+	mustRun("theme", "auto")
+}
