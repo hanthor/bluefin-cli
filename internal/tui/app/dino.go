@@ -81,9 +81,15 @@ func (d *dino) renderGround(width int, t theme.Theme) string {
 		ground[i] = groundPattern[i%len(groundPattern)]
 	}
 
-	sprite := dinoRunFrames[d.ticks%len(dinoRunFrames)]
+	frame := dinoRunFrames[d.ticks%len(dinoRunFrames)]
 	if d.paused() {
-		sprite = dinoPauseFrame
+		frame = dinoPauseFrame
+	}
+	// A blank cell each side clears the ground so the dino stands out from
+	// the (also braille) seafloor; sprinting kicks up a dust trail behind.
+	sprite := " " + frame + " "
+	if d.sprint > 0 {
+		sprite = " ⋅∘ " + frame + " "
 	}
 	sr := []rune(sprite)
 
@@ -101,7 +107,7 @@ func (d *dino) renderGround(width int, t theme.Theme) string {
 	}
 
 	groundStyle := lipgloss.NewStyle().Foreground(t.Surface)
-	dinoStyle := lipgloss.NewStyle().Foreground(t.Success)
+	dinoStyle := lipgloss.NewStyle().Foreground(t.Success).Bold(true)
 	return groundStyle.Render(string(ground[:start])) +
 		dinoStyle.Render(string(sr)) +
 		groundStyle.Render(string(ground[start+len(sr):]))
