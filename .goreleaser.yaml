@@ -106,7 +106,7 @@ brews:
       owner: tuna-os
       name: homebrew-tap
       branch: main
-      token: '{{ envOrDefault "HOMEBREW_TAP_TOKEN" "" }}'
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     directory: Formula
     homepage: "https://github.com/tuna-os/bluefin-cli"
     description: "Make your terminal experience awesome — shell config, tool bundles, and theming for any OS"
@@ -127,7 +127,7 @@ scoops:
       owner: tuna-os
       name: scoop-bucket
       branch: main
-      token: '{{ envOrDefault "SCOOP_BUCKET_TOKEN" "" }}'
+      token: "{{ .Env.SCOOP_BUCKET_TOKEN }}"
     homepage: "https://github.com/tuna-os/bluefin-cli"
     description: "Make your terminal experience awesome — shell config, tool bundles, and theming for any OS"
     license: Apache-2.0
@@ -148,7 +148,7 @@ aurs:
     maintainers:
       - "TunaOS <noreply@github.com>"
     git_url: "ssh://aur@aur.archlinux.org/bluefin-cli-bin.git"
-    private_key: '{{ envOrDefault "AUR_KEY" "" }}'
+    private_key: "{{ .Env.AUR_KEY }}"
     skip_upload: '{{ if envOrDefault "AUR_KEY" "" }}auto{{ else }}true{{ end }}'
     commit_author:
       name: tunabot
@@ -179,7 +179,7 @@ winget:
       owner: microsoft
       name: winget-pkgs
       branch: "bluefin-cli-{{.Version}}"
-      token: '{{ envOrDefault "WINGET_TOKEN" "" }}'
+      token: "{{ .Env.WINGET_TOKEN }}"
       pull_request:
         enabled: true
         draft: false
