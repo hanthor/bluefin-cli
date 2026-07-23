@@ -143,12 +143,30 @@ func dumpWindows(path string) error {
 		}
 	}
 	if _, err := exec.LookPath("scoop"); err == nil {
-		if out, err := exec.Command("scoop", "list").Output(); err == nil {
-			for _, line := range strings.Split(string(out), "\n")[2:] {
+		// scoop is a .cmd shim — route through cmd for reliability.
+		if out, err := exec.Command("cmd", "/c", "scoop", "list").Output(); err == nil {
+			lines := strings.Split(strings.ReplaceAll(string(out), "\r\n", "\n"), "\n")
+			headerSeen := false
+			for _, line := range lines {
 				fields := strings.Fields(line)
-				if len(fields) > 0 && fields[0] != "" && fields[0] != "----" {
-					fmt.Fprintf(&b, "scoop \"%s\"\n", fields[0])
+				if len(fields) == 0 {
+					continue
 				}
+				if !headerSeen {
+					headerSeen = fields[0] == "Name"
+					continue
+				}
+				if strings.HasPrefix(fields[0], "---") {
+					continue
+				}
+				fmt.Fprintf(&b, "scoop \"%s\"\n", fields[0])
+			}
+		}
+	}
+	if _, err := exec.LookPath("choco"); err == nil {
+		if out, err := exec.Command("choco", "list", "--limit-output").Output(); err == nil {
+			for _, p := range parseChocoSearch(string(out)) {
+				fmt.Fprintf(&b, "choco \"%s\"\n", p.ID)
 			}
 		}
 	}
@@ -202,7 +220,14 @@ func InstallBrewfileAll(path string) error {
 			continue
 		}
 		fmt.Printf("%s: installing %s\n", p.Kind, p.ID)
-		cmd := exec.Command(p.Kind, append(append([]string{}, args...), p.ID)...)
+		argv := append(append([]string{}, args...), p.ID)
+		var cmd *exec.Cmd
+		if p.Kind == "scoop" {
+			// scoop is a .cmd shim; exec it through cmd.
+			cmd = exec.Command("cmd", append([]string{"/c", "scoop"}, argv...)...)
+		} else {
+			cmd = exec.Command(p.Kind, argv...)
+		}
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {

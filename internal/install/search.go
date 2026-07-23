@@ -26,7 +26,7 @@ func SearchPackages(query string) []Package {
 	if runtime.GOOS == "windows" {
 		sources = []source{
 			{"winget", []string{"search", "--accept-source-agreements", query}, parseWingetSearch},
-			{"scoop", []string{"search", query}, parseScoopSearch},
+			{"cmd", []string{"/c", "scoop", "search", query}, parseScoopSearch},
 			{"choco", []string{"search", query, "--limit-output"}, parseChocoSearch},
 		}
 	} else {
@@ -40,7 +40,11 @@ func SearchPackages(query string) []Package {
 	var out []Package
 	var wg sync.WaitGroup
 	for _, src := range sources {
-		if _, err := exec.LookPath(src.bin); err != nil {
+		probe := src.bin
+		if probe == "cmd" && len(src.args) > 1 {
+			probe = src.args[1] // the shim behind cmd /c
+		}
+		if _, err := exec.LookPath(probe); err != nil {
 			continue
 		}
 		wg.Add(1)

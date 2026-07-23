@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"runtime"
 	"sort"
 
 	"github.com/spf13/viper"
@@ -24,8 +25,14 @@ type Profile struct {
 	EnabledShells []string        `json:"enabled_shells"`
 }
 
-// unixShells are the shells import will reconcile exactly.
-var unixShells = []string{"bash", "zsh", "fish"}
+// reconciledShells are the shells import will reconcile exactly on this
+// platform (Windows manages the PowerShell profile instead of rc files).
+func reconciledShells() []string {
+	if runtime.GOOS == "windows" {
+		return []string{"powershell"}
+	}
+	return []string{"bash", "zsh", "fish"}
+}
 
 // Export captures the current setup.
 func Export(currentShell string) (*Profile, error) {
@@ -106,7 +113,7 @@ func (p *Profile) Apply() error {
 		want[sh] = true
 	}
 	current := shell.CheckStatus()
-	for _, sh := range unixShells {
+	for _, sh := range reconciledShells() {
 		if current[sh] == want[sh] {
 			continue
 		}
@@ -153,7 +160,7 @@ func Diff(current, want *Profile) []string {
 			out = append(out, fmt.Sprintf("shell %s: disabled -> enabled", sh))
 		}
 	}
-	for _, sh := range unixShells {
+	for _, sh := range reconciledShells() {
 		if cur[sh] && !wanted[sh] {
 			out = append(out, fmt.Sprintf("shell %s: enabled -> disabled", sh))
 		}

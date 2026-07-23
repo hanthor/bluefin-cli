@@ -54,15 +54,16 @@ func macOSAutoAppearance() bool {
 
 func terminalMenuScreen() app.Screen {
 	items := func() []app.MenuItem {
-		ghostty := "Install Ghostty"
-		ghosttyDesc := "The fast, modern GPU terminal"
+		name := terminal.PreferredName()
+		installLabel := "Install " + name
+		installDesc := "The fast, modern GPU terminal"
 		if terminal.GhosttyInstalled() {
-			ghostty = "Ghostty installed ✓"
-			ghosttyDesc = "Reinstall / upgrade via Homebrew"
+			installLabel = name + " installed ✓"
+			installDesc = "Reinstall / upgrade via the package manager"
 		}
 		out := []app.MenuItem{
-			{Icon: "👻", Label: ghostty, Value: "install", Desc: ghosttyDesc},
-			{Icon: "🎨", Label: "Apply cool Ghostty config", Value: "config",
+			{Icon: "👻", Label: installLabel, Value: "install", Desc: installDesc},
+			{Icon: "🎨", Label: "Apply cool " + name + " config", Value: "config",
 				Desc: "Catppuccin auto light/dark, padding, Nerd Font"},
 		}
 		if runtime.GOOS == "darwin" {
@@ -83,13 +84,13 @@ func terminalMenuScreen() app.Screen {
 	return app.NewMenu("Terminal", nil, items, func(it app.MenuItem) tea.Cmd {
 		switch it.Value {
 		case "install":
-			return app.Push(app.NewRunner("Installing Ghostty", terminal.InstallGhostty))
+			return app.Push(app.NewRunner("Installing "+terminal.PreferredName(), terminal.InstallGhostty))
 		case "pin":
 			return app.Push(app.NewRunner("Pinning to Dock", func() error {
 				return terminal.PinToDock("/Applications/Ghostty.app")
 			}))
 		case "config":
-			return app.Push(app.NewRunner("Writing Ghostty config", terminal.WriteGhosttyConfig))
+			return app.Push(app.NewRunner("Writing "+terminal.PreferredName()+" config", terminal.WriteGhosttyConfig))
 		case "appearance":
 			return tea.Sequence(func() tea.Msg {
 				target := "1"
