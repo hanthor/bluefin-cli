@@ -91,6 +91,7 @@ var tools = []ToolConfig{
 func TestMain(m *testing.M) {
 	// Setup
 	originalHome := os.Getenv("HOME")
+	originalUserProfile := os.Getenv("USERPROFILE")
 	tmpHome, err := os.MkdirTemp("", "bluefin-test-home-*")
 	if err != nil {
 		panic(err)
@@ -101,6 +102,10 @@ func TestMain(m *testing.M) {
 
 	if err := os.Setenv("HOME", tmpHome); err != nil {
 		fmt.Printf("Warning: failed to set mock HOME: %v\n", err)
+	}
+	// Windows: os.UserHomeDir and child processes use USERPROFILE.
+	if err := os.Setenv("USERPROFILE", tmpHome); err != nil {
+		fmt.Printf("Warning: failed to set mock USERPROFILE: %v\n", err)
 	}
 
 	// Initialize shell configs
@@ -117,6 +122,7 @@ func TestMain(m *testing.M) {
 	if err := os.Setenv("HOME", originalHome); err != nil {
 		fmt.Printf("Warning: failed to restore HOME: %v\n", err)
 	}
+	_ = os.Setenv("USERPROFILE", originalUserProfile)
 	os.Exit(code)
 }
 
