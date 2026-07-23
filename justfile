@@ -322,3 +322,14 @@ verify:
     go build -tags extra -o tmp/bfc-state .
     ./scripts/tui-state.sh tmp/bfc-state
     rm -f tmp/bfc-state
+
+# Heavy verification on a build host (default himachal), tmux suites local
+# against the remotely built binary. Keeps the low-spec VPS responsive.
+verify-remote host="himachal":
+    rsync -az --delete --exclude tmp --exclude .git ./ {{host}}:dev/bluefin-cli-ci/
+    ssh {{host}} 'export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH; set -e; cd dev/bluefin-cli-ci; go build ./...; go build -tags extra ./...; gofmt -l cmd internal test | (! grep .); go vet -tags extra ./...; command -v golangci-lint >/dev/null && golangci-lint run --build-tags extra ./... || true; go build -tags extra -o bluefin-cli .; go test -tags extra ./...; rm -f bluefin-cli; go build -tags extra -o /tmp/bfc-remote .'
+    mkdir -p tmp
+    scp -q {{host}}:/tmp/bfc-remote tmp/bfc-remote
+    ./scripts/tui-smoke.sh tmp/bfc-remote
+    ./scripts/tui-state.sh tmp/bfc-remote
+    rm -f tmp/bfc-remote

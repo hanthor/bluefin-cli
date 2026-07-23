@@ -280,3 +280,84 @@ func TestCustomBundleInstall(t *testing.T) {
 		t.Errorf("custom bundle content never reached brew:\n%s", logged)
 	}
 }
+
+// TestBrewfileEditRoundTrip: add/list/remove must actually edit the file,
+// idempotently, preserving unrelated content.
+func TestBrewfileEditRoundTrip(t *testing.T) {
+	bf := filepath.Join(os.Getenv("HOME"), "Brewfile")
+	if err := os.WriteFile(bf, []byte("# my machine\ntap \"homebrew/core\"\nbrew \"jq\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(bf) })
+
+	mustRun := func(args ...string) string {
+		t.Helper()
+		out, err := runCommand(t, args...)
+		if err != nil {
+			t.Fatalf("%v failed: %v\n%s", args, err, out)
+		}
+		return out
+	}
+
+	mustRun("brewfile", "add", "cowsay")
+	mustRun("brewfile", "add", "wezterm", "--kind", "cask")
+	mustRun("brewfile", "add", "Microsoft.VisualStudioCode", "--kind", "winget")
+	if !fileContains(t, bf, `brew "cowsay"`) || !fileContains(t, bf, `cask "wezterm"`) ||
+		!fileContains(t, bf, `winget "Microsoft.VisualStudioCode"`) {
+		data, _ := os.ReadFile(bf)
+		t.Fatalf("add did not write entries:\n%s", data)
+	}
+
+	// Idempotent add.
+	mustRun("brewfile", "add", "cowsay")
+	data, _ := os.ReadFile(bf)
+	if strings.Count(string(data), `brew "cowsay"`) != 1 {
+		t.Error("duplicate entry after re-add")
+	}
+
+	list := mustRun("brewfile", "list")
+	for _, want := range []string{"cowsay", "wezterm", "Microsoft.VisualStudioCode", "jq"} {
+		if !strings.Contains(list, want) {
+			t.Errorf("list missing %s:\n%s", want, list)
+		}
+	}
+
+	mustRun("brewfile", "remove", "cowsay", "wezterm")
+	if fileContains(t, bf, "cowsay") || fileContains(t, bf, "wezterm") {
+		t.Error("remove left entries behind")
+	}
+	// Unrelated lines survive the edits.
+	if !fileContains(t, bf, "# my machine") || !fileContains(t, bf, `tap "homebrew/core"`) || !fileContains(t, bf, `brew "jq"`) {
+		t.Error("edits damaged unrelated content")
+	}
+}
+
+// TestBrewfileInstallAllReachesBrew: 'brewfile install' must hand the file
+// to brew bundle.
+func TestBrewfileInstallAllReachesBrew(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("brew path is unix-only")
+	}
+	bf := filepath.Join(os.Getenv("HOME"), "Brewfile")
+	if err := os.WriteFile(bf, []byte("brew \"cowsay\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(bf) })
+
+	fakeBin := t.TempDir()
+	log := filepath.Join(fakeBin, "brew.log")
+	stub := fmt.Sprintf("#!/bin/sh\necho \"$@\" >> %s\nexit 0\n", log)
+	if err := os.WriteFile(filepath.Join(fakeBin, "brew"), []byte(stub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cmd := commandWithEnv(t, []string{
+		"PATH=" + fakeBin + string(os.PathListSeparator) + os.Getenv("PATH"),
+	}, "brewfile", "install")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("brewfile install failed: %v\n%s", err, out)
+	}
+	logged, _ := os.ReadFile(log)
+	if !strings.Contains(string(logged), "bundle install --file="+bf) {
+		t.Errorf("brew bundle not invoked on the home Brewfile:\n%s", logged)
+	}
+}
