@@ -46,7 +46,7 @@ keys Escape; cap
 assert "escape pops to home"      "Bluefin CLI › Home *$"
 
 keys /; keys s t a; cap
-assert "filter echoes query"      "/sta"
+assert "filter echoes query"      "🔎 sta"
 assert "filter matches fuzzily"   "Starship"
 
 keys Escape; sleep 0.3; keys C-p; cap

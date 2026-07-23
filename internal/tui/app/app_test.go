@@ -1,6 +1,7 @@
 package app
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -8,6 +9,13 @@ import (
 	tea "charm.land/bubbletea/v2"
 	teatest "github.com/charmbracelet/x/exp/teatest/v2"
 )
+
+// ansiRE matches CSI sequences and OSC strings (BEL- or ST-terminated) so
+// plain-text assertions survive styling like the gradient wordmark, which
+// inserts escape codes between adjacent letters.
+var ansiRE = regexp.MustCompile(`\x1b\[[0-9;]*[A-Za-z]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)`)
+
+func stripAnsi(s string) string { return ansiRE.ReplaceAllString(s, "") }
 
 func key(r rune) tea.KeyPressMsg {
 	return tea.KeyPressMsg{Code: r, Text: string(r)}
@@ -74,15 +82,15 @@ func step(m tea.Model, msg tea.Msg, depth int) tea.Model {
 func TestViewRendersMenu(t *testing.T) {
 	var m tea.Model = New(testTree())
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
-	frame := m.(Model).View().Content
+	frame := stripAnsi(m.(Model).View().Content)
 
 	for _, want := range []string{"Bluefin CLI", "Home", "Alpha", "Beta", "move", "select", "filter", "help", "quit"} {
 		if !strings.Contains(frame, want) {
 			t.Errorf("rendered frame missing %q", want)
 		}
 	}
-	if !strings.Contains(frame, "❯") {
-		t.Error("rendered frame missing cursor marker")
+	if !strings.Contains(frame, "▎") {
+		t.Error("rendered frame missing cursor accent bar")
 	}
 }
 

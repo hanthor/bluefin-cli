@@ -51,12 +51,12 @@ func mainMenuItems() []app.MenuItem {
 	}
 
 	items := []app.MenuItem{
-		{Icon: "📊", Label: "Status", Value: "status"},
-		{Icon: "🐚", Label: "Bluefin Shell", Value: "shell", Hint: shellHint, Submenu: true},
-		{Icon: "📦", Label: "Install Apps", Value: "bundles", Submenu: true},
+		{Icon: "📊", Label: "Status", Value: "status", Desc: "Environment health at a glance"},
+		{Icon: "🐚", Label: "Bluefin Shell", Value: "shell", Desc: "Aliases, prompt, and modern CLI tools", Hint: shellHint, Submenu: true},
+		{Icon: "📦", Label: "Install Apps", Value: "bundles", Desc: "Curated tool bundles", Submenu: true},
 	}
 	items = append(items, extraMenuItems()...)
-	items = append(items, app.MenuItem{Icon: "👋", Label: "Exit", Value: "exit"})
+	items = append(items, app.MenuItem{Icon: "👋", Label: "Exit", Value: "exit", Desc: "Back to your shell"})
 	return items
 }
 
@@ -101,11 +101,11 @@ func shellMenuScreen() app.Screen {
 			toggle = fmt.Sprintf("Disable for current shell (%s)", current)
 		}
 		return []app.MenuItem{
-			{Icon: "🔄", Label: toggle, Value: "toggle_current"},
-			{Icon: "🔧", Label: "Configure Components", Value: "components", Submenu: true},
-			{Icon: "📰", Label: "MOTD Settings", Value: "motd", Submenu: true},
-			{Icon: "🐚", Label: "Other Shells", Value: "shells", Submenu: true},
-			{Icon: "🎨", Label: "Advanced", Value: "advanced", Submenu: true},
+			{Icon: "🔄", Label: toggle, Value: "toggle_current", Desc: "One switch for the whole experience"},
+			{Icon: "🔧", Label: "Configure Components", Value: "components", Desc: "Pick which tools load with your shell", Submenu: true},
+			{Icon: "📰", Label: "MOTD Settings", Value: "motd", Desc: "Message of the day on new terminals", Submenu: true},
+			{Icon: "🐚", Label: "Other Shells", Value: "shells", Desc: "Enable for bash, zsh, or fish", Submenu: true},
+			{Icon: "🎨", Label: "Advanced", Value: "advanced", Desc: "Fine-grained shell integration", Submenu: true},
 		}
 	}
 	return app.NewMenu("Shell", nil, items, func(it app.MenuItem) tea.Cmd {
@@ -145,7 +145,7 @@ func bundlesMenuScreen() app.Screen {
 		cats := availableBundleCategories()
 		out := make([]app.MenuItem, 0, len(cats))
 		for _, cat := range cats {
-			out = append(out, app.MenuItem{Label: cat.Label, Value: cat.ID, Submenu: true})
+			out = append(out, app.MenuItem{Label: cat.Label, Value: cat.ID, Desc: cat.Desc, Submenu: true})
 		}
 		return out
 	}

@@ -43,11 +43,7 @@ func newPalette() Screen {
 		out := make([]MenuItem, 0, len(actions))
 		for _, a := range actions {
 			byID[a.ID] = a
-			label := a.Label
-			if a.Section != "" {
-				label += "  — " + a.Section
-			}
-			out = append(out, MenuItem{Icon: a.Icon, Label: label, Value: a.ID})
+			out = append(out, MenuItem{Icon: a.Icon, Label: a.Label, Value: a.ID, Desc: a.Section})
 		}
 		return out
 	}

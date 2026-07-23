@@ -14,6 +14,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/tuna-os/bluefin-cli/internal/tui/theme"
 )
 
@@ -137,6 +138,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case PushMsg:
 		m.stack = append(m.stack, msg.Screen)
 		m.showHelp = false
+		m.dino.boost()
 		return m, msg.Screen.Init()
 
 	case PopMsg:
@@ -240,15 +242,38 @@ func (m Model) renderHeader() string {
 		crumbs = append(crumbs, s.Title())
 	}
 
-	title := lipgloss.NewStyle().Foreground(t.Accent).Bold(true).Render(" Bluefin CLI")
+	title := " " + gradient("Bluefin", t.Accent, t.Success) +
+		lipgloss.NewStyle().Foreground(t.TextFaint).Render(" CLI")
 	sep := lipgloss.NewStyle().Foreground(t.TextFaint).Render(" › ")
 	crumb := lipgloss.NewStyle().Foreground(t.TextMuted).Render(strings.Join(crumbs, " › "))
 	titleRow := title + sep + crumb
 
-	dinoRow := m.dino.render(m.width, t)
-	rule := lipgloss.NewStyle().Foreground(t.Surface).Render(strings.Repeat("─", max(m.width, 1)))
+	// The dino runs along a full-width braille seafloor that doubles as the
+	// header rule.
+	ground := m.dino.renderGround(max(m.width, 1), t)
 
-	return titleRow + "\n" + dinoRow + "\n" + rule
+	return titleRow + "\n" + ground + "\n"
+}
+
+// gradient renders s with a per-rune color blend from one theme color to
+// another — the wordmark treatment.
+func gradient(s string, from, to color.Color) string {
+	runes := []rune(s)
+	cf, okf := colorful.MakeColor(from)
+	ct, okt := colorful.MakeColor(to)
+	if !okf || !okt || len(runes) == 0 {
+		return lipgloss.NewStyle().Bold(true).Render(s)
+	}
+	var b strings.Builder
+	for i, r := range runes {
+		frac := 0.0
+		if len(runes) > 1 {
+			frac = float64(i) / float64(len(runes)-1)
+		}
+		c := cf.BlendLuv(ct, frac)
+		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(c.Hex())).Bold(true).Render(string(r)))
+	}
+	return b.String()
 }
 
 func (m Model) renderFooter() string {

@@ -10,12 +10,12 @@ import (
 
 func extraMenuItems() []app.MenuItem {
 	items := []app.MenuItem{
-		{Icon: "🖼 ", Label: "Wallpapers", Value: "wallpapers", Submenu: true},
-		{Icon: "🔤", Label: "Fonts", Value: "fonts", Submenu: true},
-		{Icon: "🚀", Label: "Starship Theme", Value: "starship", Submenu: true},
+		{Icon: "🖼 ", Label: "Wallpapers", Value: "wallpapers", Desc: "Bluefin wallpaper gallery", Submenu: true},
+		{Icon: "🔤", Label: "Fonts", Value: "fonts", Desc: "Nerd Fonts for your terminal", Submenu: true},
+		{Icon: "🚀", Label: "Starship Theme", Value: "starship", Desc: "Prompt presets & customization", Submenu: true},
 	}
 	if env.IsWSL() || env.IsWindows() {
-		items = append(items, app.MenuItem{Icon: "🌇", Label: "Sunset Switching", Value: "sunset", Submenu: true})
+		items = append(items, app.MenuItem{Icon: "🌇", Label: "Sunset Switching", Value: "sunset", Desc: "Auto light/dark by time of day", Submenu: true})
 	}
 	return items
 }

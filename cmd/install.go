@@ -95,19 +95,20 @@ var installWallpapersCleanupCmd = &cobra.Command{
 }
 
 type bundleCategory struct {
-	Label    string
-	ID       string
+	Label     string
+	ID        string
+	Desc      string
 	LinuxOnly bool
 }
 
 var bundleCategories = []bundleCategory{
-	{Label: "🤖 AI Tools", ID: "ai"},
-	{Label: "💻 CLI Essentials", ID: "cli"},
-	{Label: "🌐 CNCF Tools", ID: "cncf"},
-	{Label: "🧪 Experimental IDE", ID: "experimental-ide"},
-	{Label: "📝 IDE Tools", ID: "ide"},
-	{Label: "🎡 Kubernetes Tools", ID: "k8s"},
-	{Label: "🐧 Full GNOME Desktop", ID: "full-desktop", LinuxOnly: true},
+	{Label: "🤖 AI Tools", ID: "ai", Desc: "Coding agents & LLM tools"},
+	{Label: "💻 CLI Essentials", ID: "cli", Desc: "Everyday terminal essentials"},
+	{Label: "🌐 CNCF Tools", ID: "cncf", Desc: "Cloud-native toolchain"},
+	{Label: "🧪 Experimental IDE", ID: "experimental-ide", Desc: "Bleeding-edge editors"},
+	{Label: "📝 IDE Tools", ID: "ide", Desc: "Editors & IDEs"},
+	{Label: "🎡 Kubernetes Tools", ID: "k8s", Desc: "Kubernetes workflow"},
+	{Label: "🐧 Full GNOME Desktop", ID: "full-desktop", Desc: "Complete desktop environment", LinuxOnly: true},
 }
 
 func runBundlesMenu() error {

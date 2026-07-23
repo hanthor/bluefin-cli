@@ -14,7 +14,8 @@ type MenuItem struct {
 	Icon    string
 	Label   string
 	Value   string
-	Hint    string // dimmed annotation, e.g. "Enabled"
+	Desc    string // one-line description shown under the label
+	Hint    string // dimmed annotation, e.g. "bash ✓"
 	Submenu bool   // renders a › marker
 }
 
@@ -147,55 +148,76 @@ func (s *MenuScreen) View(width, height int) string {
 	var b strings.Builder
 
 	if s.filtering || s.query != "" {
-		prompt := lipgloss.NewStyle().Foreground(t.Accent).Render("/") + s.query
+		prompt := lipgloss.NewStyle().Foreground(t.Accent).Bold(true).Render(" 🔎 ") + s.query
 		if s.filtering {
 			prompt += lipgloss.NewStyle().Foreground(t.Accent).Render("▏")
 		}
-		b.WriteString(" " + prompt + "\n\n")
+		b.WriteString(prompt + "\n\n")
 	} else {
 		b.WriteString("\n")
 	}
 
-	// The cursor row gets a full-width background highlight; unselected rows
-	// stay quiet with faint hints and submenu markers.
-	sel := lipgloss.NewStyle().
-		Foreground(t.Accent).
-		Background(t.SelectedBackground).
-		Bold(true)
-	norm := lipgloss.NewStyle().Foreground(t.TextMuted)
-	hintStyle := lipgloss.NewStyle().Foreground(t.TextFaint)
-	marker := lipgloss.NewStyle().Foreground(t.TextFaint).Render(" ›")
-
 	vis := s.visible()
+	hintStyle := lipgloss.NewStyle().Foreground(t.TextFaint)
 	if len(vis) == 0 {
-		b.WriteString(hintStyle.Render("  no matches"))
+		b.WriteString(hintStyle.Render("  no matches — esc clears the filter"))
+		return b.String()
 	}
+
+	// Card layout: each item is a two-line block (label + description).
+	// The selected card gets an accent bar and a tinted highlight across
+	// both lines. Falls back to compact single-line rows when the terminal
+	// is too small for cards.
+	cards := width >= 56 && height >= len(vis)*2+2
+
 	rowWidth := max(width-2, 10)
+	selLabel := lipgloss.NewStyle().Foreground(t.Accent).Bold(true).Background(t.SelectedBackground)
+	selDesc := lipgloss.NewStyle().Foreground(t.TextMuted).Background(t.SelectedBackground)
+	selHint := lipgloss.NewStyle().Foreground(t.AccentAlt).Background(t.SelectedBackground)
+	bar := lipgloss.NewStyle().Foreground(t.Accent).Background(t.SelectedBackground).Render("▎")
+	normLabel := lipgloss.NewStyle().Foreground(t.TextBase)
+	normDesc := lipgloss.NewStyle().Foreground(t.TextFaint)
+	marker := lipgloss.NewStyle().Foreground(t.TextFaint)
+
+	pad := func(styled string, style lipgloss.Style) string {
+		if w := lipgloss.Width(styled); w < rowWidth {
+			return styled + style.Render(strings.Repeat(" ", rowWidth-w))
+		}
+		return styled
+	}
+
 	for row, i := range vis {
 		it := s.items[i]
-		line := it.Label
+		label := it.Label
 		if it.Icon != "" {
-			line = it.Icon + " " + line
+			label = it.Icon + " " + label
 		}
+		suffix := ""
+		if it.Submenu {
+			suffix = " ›"
+		}
+
 		if row == s.cursor {
-			text := " ❯ " + line
+			line := bar + selLabel.Render(" "+label+suffix)
 			if it.Hint != "" {
-				text += "  " + it.Hint
+				line += selHint.Render("  " + it.Hint)
 			}
-			if it.Submenu {
-				text += " ›"
+			b.WriteString(pad(line, selLabel) + "\n")
+			if cards {
+				desc := bar + selDesc.Render("   "+it.Desc)
+				b.WriteString(pad(desc, selDesc) + "\n")
 			}
-			b.WriteString(sel.Width(rowWidth).Render(text))
 		} else {
-			b.WriteString(norm.Render("   " + line))
+			line := " " + normLabel.Render(" "+label) + marker.Render(suffix)
 			if it.Hint != "" {
-				b.WriteString(hintStyle.Render("  " + it.Hint))
+				line += hintStyle.Render("  " + it.Hint)
 			}
-			if it.Submenu {
-				b.WriteString(marker)
+			b.WriteString(line + "\n")
+			if cards {
+				b.WriteString(normDesc.Render("    " + it.Desc))
+				b.WriteString("\n")
 			}
 		}
-		b.WriteString("\n")
 	}
 	return b.String()
 }
