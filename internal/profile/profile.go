@@ -160,8 +160,10 @@ func Diff(current, want *Profile) []string {
 			out = append(out, fmt.Sprintf("shell %s: disabled -> enabled", sh))
 		}
 	}
-	for _, sh := range reconciledShells() {
-		if cur[sh] && !wanted[sh] {
+	// Diff is a pure comparison of the two documents (Apply filters by
+	// platform); anything enabled now but absent from the profile is drift.
+	for _, sh := range current.EnabledShells {
+		if !wanted[sh] {
 			out = append(out, fmt.Sprintf("shell %s: enabled -> disabled", sh))
 		}
 	}
