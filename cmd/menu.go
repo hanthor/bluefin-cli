@@ -90,6 +90,7 @@ func mainMenuItems() []app.MenuItem {
 		{Icon: "🩺", Label: "Doctor", Value: "doctor", Desc: "Diagnose setup problems with fix hints"},
 		{Icon: "🐚", Label: "Bluefin Shell", Value: "shell", Desc: "Aliases, prompt, and modern CLI tools", Hint: shellHint, Submenu: true},
 		{Icon: "📦", Label: "Install Apps", Value: "bundles", Desc: "Curated tool bundles", Submenu: true},
+		{Icon: "👻", Label: "Terminal Setup", Value: "terminal", Desc: "Ghostty install, Dock pin, themed config", Submenu: true},
 	}
 	items = append(items, extraMenuItems()...)
 	items = append(items, app.MenuItem{Icon: "👋", Label: "Exit", Value: "exit", Desc: "Back to your shell"})
@@ -106,6 +107,8 @@ func mainMenuSelect(it app.MenuItem) tea.Cmd {
 		return app.Push(shellMenuScreen())
 	case "bundles":
 		return app.Push(bundlesMenuScreen())
+	case "terminal":
+		return app.Push(terminalMenuScreen())
 	case "exit":
 		return app.Pop()
 	default:
@@ -356,6 +359,10 @@ func registerPaletteActions() {
 		app.Register(app.Action{
 			ID: "doctor", Icon: "🩺", Label: "Doctor", Section: "Home",
 			Do: func() tea.Cmd { return doctorScreenCmd() },
+		})
+		app.Register(app.Action{
+			ID: "terminal", Icon: "👻", Label: "Terminal Setup", Section: "Home",
+			Do: func() tea.Cmd { return app.Push(terminalMenuScreen()) },
 		})
 		app.Register(app.Action{
 			ID: "update", Icon: "⬆", Label: "Check for Updates", Section: "Home",
