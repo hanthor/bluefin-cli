@@ -216,8 +216,103 @@ func bundlesMenuScreen() app.Screen {
 		return out
 	}
 	return app.NewMenu("Install Apps", nil, items, func(it app.MenuItem) tea.Cmd {
-		id := it.Value
-		return app.RunLegacy(func() error { return runPackageMenu(id) })
+		return packagesFlow(it.Value, it.Label)
+	})
+}
+
+// packagesFlow loads a bundle in the background (the menu stays live), then
+// pushes a native multiselect; confirmed changes run through the legacy
+// bridge since brew streams output.
+func packagesFlow(id, label string) tea.Cmd {
+	return tea.Batch(
+		app.Toast("Loading "+label+"…", false),
+		func() tea.Msg {
+			pkgs, err := install.GetBundlePackages(id)
+			if err != nil {
+				return app.ToastMsg{Text: "Error: " + err.Error(), IsErr: true}
+			}
+			pkgs = install.MarkInstalled(pkgs)
+			return app.PushMsg{Screen: packagesFormScreen(label, pkgs)}
+		},
+	)
+}
+
+func packagesFormScreen(label string, pkgs []install.Package) app.Screen {
+	var selected []string
+
+	build := func() *huh.Form {
+		selected = selected[:0]
+		opts := make([]huh.Option[string], 0, len(pkgs))
+		for _, p := range pkgs {
+			if p.Installed {
+				selected = append(selected, p.ID)
+			}
+			opts = append(opts, huh.NewOption(p.Name, p.ID))
+		}
+		return huh.NewForm(huh.NewGroup(
+			huh.NewMultiSelect[string]().
+				Title("Select packages").
+				Description("Pre-checked = already installed. Space toggles, enter confirms.").
+				Options(opts...).
+				Value(&selected),
+		)).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
+	}
+
+	return app.NewForm(label, build, func(aborted bool) tea.Cmd {
+		if aborted {
+			return nil
+		}
+		on := make(map[string]bool, len(selected))
+		for _, id := range selected {
+			on[id] = true
+		}
+		var toInstall, toRemove []install.Package
+		for _, p := range pkgs {
+			switch {
+			case on[p.ID] && !p.Installed:
+				toInstall = append(toInstall, p)
+			case !on[p.ID] && p.Installed:
+				toRemove = append(toRemove, p)
+			}
+		}
+		if len(toInstall) == 0 && len(toRemove) == 0 {
+			return app.Toast("No changes selected.", false)
+		}
+		return app.Push(confirmChangesScreen(toInstall, toRemove))
+	})
+}
+
+func confirmChangesScreen(toInstall, toRemove []install.Package) app.Screen {
+	var lines []string
+	for _, p := range toInstall {
+		lines = append(lines, "+ "+p.Name)
+	}
+	for _, p := range toRemove {
+		lines = append(lines, "- "+p.Name)
+	}
+	confirmed := false
+
+	build := func() *huh.Form {
+		confirmed = false
+		return huh.NewForm(huh.NewGroup(
+			huh.NewConfirm().
+				Title("Apply these changes?").
+				Description(strings.Join(lines, "\n")).
+				Value(&confirmed),
+		)).WithTheme(tui.AppTheme).WithKeyMap(tui.ConfirmKeyMap())
+	}
+
+	return app.NewForm("Confirm", build, func(aborted bool) tea.Cmd {
+		if aborted || !confirmed {
+			return nil
+		}
+		return tea.Sequence(
+			app.RunLegacy(func() error {
+				applyPackageChanges(toInstall, toRemove)
+				return nil
+			}),
+			app.Toast("Done — changes applied.", false),
+		)
 	})
 }
 
@@ -236,12 +331,10 @@ func registerPaletteActions() {
 			Do: func() tea.Cmd { return app.Push(app.NewGame()) },
 		})
 		for _, cat := range availableBundleCategories() {
-			id := cat.ID
+			id, label := cat.ID, cat.Label
 			app.Register(app.Action{
-				ID: "install-" + id, Label: cat.Label, Section: "Install",
-				Do: func() tea.Cmd {
-					return app.RunLegacy(func() error { return runPackageMenu(id) })
-				},
+				ID: "install-" + id, Label: label, Section: "Install",
+				Do: func() tea.Cmd { return packagesFlow(id, label) },
 			})
 		}
 		for _, it := range extraMenuItems() {

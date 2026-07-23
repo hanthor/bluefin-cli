@@ -42,18 +42,23 @@ var (
 
 type appTheme struct{}
 
-// Theme styles huh forms with the app's semantic tokens: a real rounded
-// border around the focused group (instead of huh's thick left rule),
-// accent-colored cursors, and check/highlight selection instead of [ ]
-// checkboxes. isDark comes from huh's own terminal background detection.
+// Theme styles huh forms with the app's semantic tokens: an accent bar on
+// the left edge only, accent-colored cursors, and check/highlight selection
+// instead of [ ] checkboxes. isDark comes from huh's own terminal
+// background detection.
+//
+// Deliberately no full box: the check/cursor glyphs (✓ · ❯) are
+// East-Asian-ambiguous width, and terminals that draw them double-wide
+// would push a right border out of alignment on some rows. A left-only bar
+// has no right edge to break.
 func (t appTheme) Theme(isDark bool) *huh.Styles {
 	tok := theme.Resolve(isDark)
 	s := huh.ThemeCatppuccin(isDark)
 
 	s.Focused.Base = lipgloss.NewStyle().
 		Padding(0, 2).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(tok.Overlay)
+		Border(lipgloss.ThickBorder(), false, false, false, true).
+		BorderForeground(tok.Accent)
 	s.Focused.Card = s.Focused.Base
 	s.Blurred.Base = s.Focused.Base.BorderForeground(tok.Surface)
 	s.Blurred.Card = s.Blurred.Base
