@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"sync"
 
 	tea "charm.land/bubbletea/v2"
@@ -34,12 +36,18 @@ func mainMenuScreen() app.Screen {
 }
 
 func mainMenuItems() []app.MenuItem {
-	shellHint := "Disabled"
-	for _, enabled := range shell.CheckStatus() {
+	// Show exactly which shells have the experience enabled, not a vague
+	// "Enabled" that may not match the user's current shell.
+	var enabledShells []string
+	for sh, enabled := range shell.CheckStatus() {
 		if enabled {
-			shellHint = "Enabled"
-			break
+			enabledShells = append(enabledShells, sh)
 		}
+	}
+	sort.Strings(enabledShells)
+	shellHint := "off"
+	if len(enabledShells) > 0 {
+		shellHint = strings.Join(enabledShells, " ") + " ✓"
 	}
 
 	items := []app.MenuItem{

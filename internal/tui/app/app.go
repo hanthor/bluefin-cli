@@ -274,16 +274,21 @@ func (m Model) renderFooter() string {
 	return "\n" + lipgloss.NewStyle().MaxWidth(m.width).Render(line)
 }
 
+// helpSafe rewrites arrow glyphs to ASCII words inside the bordered help
+// panel: ↑↓←→ are East-Asian-ambiguous width, and terminals that render
+// them double-wide would break the panel's right border alignment.
+var helpSafe = strings.NewReplacer("↑↓", "up/down", "→", "right", "←", "left")
+
 func (m Model) renderHelp(height int) string {
 	t := m.theme
 	hints := append(m.top().KeyHints(), globalHints(len(m.stack) > 1)...)
 
-	keyStyle := lipgloss.NewStyle().Foreground(t.Accent).Width(14)
+	keyStyle := lipgloss.NewStyle().Foreground(t.Accent).Width(16)
 	descStyle := lipgloss.NewStyle().Foreground(t.TextBase)
 	rows := make([]string, 0, len(hints)+2)
 	rows = append(rows, lipgloss.NewStyle().Foreground(t.TextMuted).Bold(true).Render("Keys"), "")
 	for _, h := range hints {
-		rows = append(rows, keyStyle.Render(h.Keys)+descStyle.Render(h.Desc))
+		rows = append(rows, keyStyle.Render(helpSafe.Replace(h.Keys))+descStyle.Render(h.Desc))
 	}
 
 	panel := lipgloss.NewStyle().

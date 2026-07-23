@@ -37,14 +37,25 @@ builds:
       - amd64
       - arm64
 
+# One archive per build: the winget/brews/scoops `ids` filters match archive
+# IDs, so a combined archive matches neither and fails the publish step.
 archives:
-  - formats: [tar.gz]
-    # use zip for windows archives
+  - id: standard
+    ids: [standard]
+    formats: [tar.gz]
     format_overrides:
       - goos: windows
         formats: [zip]
     name_template: >-
       {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}
+  - id: plus
+    ids: [plus]
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: >-
+      {{ .ProjectName }}-plus_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}
 
 checksum:
   name_template: 'checksums.txt'

@@ -156,7 +156,12 @@ func (s *MenuScreen) View(width, height int) string {
 		b.WriteString("\n")
 	}
 
-	sel := lipgloss.NewStyle().Foreground(t.Accent).Bold(true)
+	// The cursor row gets a full-width background highlight; unselected rows
+	// stay quiet with faint hints and submenu markers.
+	sel := lipgloss.NewStyle().
+		Foreground(t.Accent).
+		Background(t.SelectedBackground).
+		Bold(true)
 	norm := lipgloss.NewStyle().Foreground(t.TextMuted)
 	hintStyle := lipgloss.NewStyle().Foreground(t.TextFaint)
 	marker := lipgloss.NewStyle().Foreground(t.TextFaint).Render(" ›")
@@ -165,6 +170,7 @@ func (s *MenuScreen) View(width, height int) string {
 	if len(vis) == 0 {
 		b.WriteString(hintStyle.Render("  no matches"))
 	}
+	rowWidth := max(width-2, 10)
 	for row, i := range vis {
 		it := s.items[i]
 		line := it.Label
@@ -172,15 +178,22 @@ func (s *MenuScreen) View(width, height int) string {
 			line = it.Icon + " " + line
 		}
 		if row == s.cursor {
-			b.WriteString(sel.Render(" ❯ " + line))
+			text := " ❯ " + line
+			if it.Hint != "" {
+				text += "  " + it.Hint
+			}
+			if it.Submenu {
+				text += " ›"
+			}
+			b.WriteString(sel.Width(rowWidth).Render(text))
 		} else {
 			b.WriteString(norm.Render("   " + line))
-		}
-		if it.Hint != "" {
-			b.WriteString(hintStyle.Render("  " + it.Hint))
-		}
-		if it.Submenu {
-			b.WriteString(marker)
+			if it.Hint != "" {
+				b.WriteString(hintStyle.Render("  " + it.Hint))
+			}
+			if it.Submenu {
+				b.WriteString(marker)
+			}
 		}
 		b.WriteString("\n")
 	}

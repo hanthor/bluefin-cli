@@ -44,7 +44,7 @@ else
   bin_dir="$HOME/.local/bin"
 fi
 
-url="https://github.com/$REPO/releases/download/$tag/bluefin-cli_${version}_${os}_${arch}.tar.gz"
+url="https://github.com/$REPO/releases/download/$tag/${BINARY}_${version}_${os}_${arch}.tar.gz"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 

@@ -137,7 +137,8 @@ func Apply(rel *Release, progress io.Writer) error {
 	if runtime.GOOS == "windows" {
 		ext = "zip"
 	}
-	wanted := fmt.Sprintf("bluefin-cli_%s_%s_%s.%s", version, runtime.GOOS, runtime.GOARCH, ext)
+	// Archive name matches the binary: bluefin-cli_... or bluefin-cli-plus_...
+	wanted := fmt.Sprintf("%s_%s_%s_%s.%s", binName, version, runtime.GOOS, runtime.GOARCH, ext)
 
 	var url string
 	for _, a := range rel.Assets {

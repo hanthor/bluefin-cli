@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/term"
 	"github.com/tuna-os/bluefin-cli/internal/env"
 	"github.com/tuna-os/bluefin-cli/internal/install"
 	"github.com/tuna-os/bluefin-cli/internal/motd"
@@ -224,11 +225,21 @@ func Show() error {
 		}
 	}
 
-	// Combine columns with padding
-	formatted := lipgloss.JoinHorizontal(lipgloss.Top,
-		lipgloss.NewStyle().Width(40).Render(leftCol),
-		string(rightCol),
-	)
+	// Two columns need ~76 cells; stack vertically on narrow terminals so
+	// the columns can't overlap.
+	width, _, err := term.GetSize(os.Stdout.Fd())
+	if err != nil || width <= 0 {
+		width = 80
+	}
+	var formatted string
+	if width < 76 {
+		formatted = leftCol + "\n" + rightCol
+	} else {
+		formatted = lipgloss.JoinHorizontal(lipgloss.Top,
+			lipgloss.NewStyle().Width(40).Render(leftCol),
+			rightCol,
+		)
+	}
 
 	fmt.Println(formatted)
 

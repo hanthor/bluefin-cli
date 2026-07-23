@@ -10,7 +10,6 @@ import (
 	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/tuna-os/bluefin-cli/internal/tui/theme"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -43,19 +42,39 @@ var (
 
 type appTheme struct{}
 
-func (t appTheme) Theme(_ bool) *huh.Styles {
-	isDark := viper.GetBool("ui.dark_mode")
+// Theme styles huh forms with the app's semantic tokens: a real rounded
+// border around the focused group (instead of huh's thick left rule),
+// accent-colored cursors, and check/highlight selection instead of [ ]
+// checkboxes. isDark comes from huh's own terminal background detection.
+func (t appTheme) Theme(isDark bool) *huh.Styles {
+	tok := theme.Resolve(isDark)
 	s := huh.ThemeCatppuccin(isDark)
-	var unselectedHex string
-	if isDark {
-		unselectedHex = "#bac2de" // Catppuccin Mocha Subtext1
-	} else {
-		unselectedHex = "#6c6f85" // Catppuccin Latte Overlay2
-	}
-	unselected := lipgloss.Color(unselectedHex)
-	s.Focused.Option = s.Focused.Option.Foreground(unselected)
-	s.Focused.UnselectedOption = s.Focused.UnselectedOption.Foreground(unselected)
-	s.Focused.UnselectedPrefix = s.Focused.UnselectedPrefix.Foreground(unselected)
+
+	s.Focused.Base = lipgloss.NewStyle().
+		Padding(0, 2).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(tok.Overlay)
+	s.Focused.Card = s.Focused.Base
+	s.Blurred.Base = s.Focused.Base.BorderForeground(tok.Surface)
+	s.Blurred.Card = s.Blurred.Base
+
+	s.Focused.Title = s.Focused.Title.Foreground(tok.Accent).Bold(true)
+	s.Focused.Description = s.Focused.Description.Foreground(tok.TextFaint)
+
+	// Select: accent cursor, muted rest.
+	s.Focused.SelectSelector = lipgloss.NewStyle().SetString("❯ ").Foreground(tok.Accent).Bold(true)
+	s.Focused.Option = s.Focused.Option.Foreground(tok.TextMuted)
+
+	// MultiSelect: colored highlights instead of [ ] checkboxes.
+	s.Focused.MultiSelectSelector = lipgloss.NewStyle().SetString("❯ ").Foreground(tok.Accent).Bold(true)
+	s.Focused.SelectedPrefix = lipgloss.NewStyle().SetString("✓ ").Foreground(tok.Success).Bold(true)
+	s.Focused.UnselectedPrefix = lipgloss.NewStyle().SetString("· ").Foreground(tok.TextFaint)
+	s.Focused.SelectedOption = lipgloss.NewStyle().Foreground(tok.Success).Bold(true)
+	s.Focused.UnselectedOption = lipgloss.NewStyle().Foreground(tok.TextMuted)
+
+	s.Focused.FocusedButton = s.Focused.FocusedButton.Background(tok.Accent).Foreground(tok.Bg).Bold(true)
+	s.Focused.BlurredButton = s.Focused.BlurredButton.Background(tok.Surface).Foreground(tok.TextMuted)
+
 	return s
 }
 

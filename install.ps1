@@ -25,7 +25,7 @@ if ($env:BLUEFIN_CLI_VERSION) {
 $version = $tag.TrimStart("v")
 
 $binDir = if ($env:BLUEFIN_CLI_BIN_DIR) { $env:BLUEFIN_CLI_BIN_DIR } else { Join-Path $env:LOCALAPPDATA "Programs\BluefinCLI" }
-$url = "https://github.com/$repo/releases/download/$tag/bluefin-cli_${version}_windows_${arch}.zip"
+$url = "https://github.com/$repo/releases/download/$tag/${binary}_${version}_windows_${arch}.zip"
 
 Write-Host "Downloading $binary $tag (windows/$arch)..."
 $tmp = Join-Path ([IO.Path]::GetTempPath()) ("bluefin-cli-install-" + [Guid]::NewGuid())
