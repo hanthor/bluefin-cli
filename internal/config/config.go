@@ -22,7 +22,7 @@ func Init() error {
 
 	// Standard config paths
 	viper.AddConfigPath(filepath.Join(home, ".config", "bluefin-cli"))
-	
+
 	// Homebrew prefix path
 	if prefix := os.Getenv("HOMEBREW_PREFIX"); prefix != "" {
 		viper.AddConfigPath(filepath.Join(prefix, "etc", "bluefin-cli"))

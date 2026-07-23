@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/tuna-os/bluefin-cli/internal/shell"
 	"github.com/spf13/cobra"
+	"github.com/tuna-os/bluefin-cli/internal/shell"
 )
 
 var (
@@ -14,8 +14,8 @@ var (
 )
 
 var uninstallCmd = &cobra.Command{
-	Use:     "uninstall",
-	Short:   "Uninstall Bluefin shell setup and managed tools",
+	Use:   "uninstall",
+	Short: "Uninstall Bluefin shell setup and managed tools",
 	Long: `Remove Bluefin shell initialization setup across powershell, bash, zsh, and fish.
 
 By default this command also attempts to uninstall managed software:
@@ -46,4 +46,3 @@ func init() {
 	uninstallCmd.Flags().BoolVar(&uninstallRemoveModules, "modules", true, "Uninstall PowerShell modules managed by Bluefin CLI")
 	uninstallCmd.Flags().BoolVar(&uninstallKeepConfig, "keep-config", false, "Keep Bluefin shell preferences JSON")
 }
-

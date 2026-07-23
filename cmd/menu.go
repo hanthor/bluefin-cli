@@ -16,6 +16,7 @@ import (
 	"github.com/tuna-os/bluefin-cli/internal/status"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
 	"github.com/tuna-os/bluefin-cli/internal/tui/app"
+	"github.com/tuna-os/bluefin-cli/internal/update"
 )
 
 var menuCmd = &cobra.Command{
@@ -23,12 +24,27 @@ var menuCmd = &cobra.Command{
 	Short: "Open the interactive Bluefin main menu",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		registerPaletteActions()
-		return app.Run(mainMenuScreen())
+		return app.Run(mainMenuScreen(), checkForUpdate)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(menuCmd)
+}
+
+// checkForUpdate runs in the background when the menu starts and surfaces a
+// toast when a newer release exists. Failures are silent — an update nudge
+// is never worth an error message.
+func checkForUpdate() tea.Msg {
+	rel, err := update.Latest()
+	if err != nil || !update.IsNewer(version, rel.TagName) {
+		return nil
+	}
+	hint := "bluefin-cli update"
+	if h := update.Detect().UpdateHint(); h != "" {
+		hint = h
+	}
+	return app.ToastMsg{Text: fmt.Sprintf("⬆ %s available — run: %s", rel.TagName, hint)}
 }
 
 func mainMenuScreen() app.Screen {

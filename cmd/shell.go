@@ -7,17 +7,17 @@ import (
 	"strings"
 
 	"charm.land/huh/v2"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/tuna-os/bluefin-cli/internal/config"
 	"github.com/tuna-os/bluefin-cli/internal/env"
 	"github.com/tuna-os/bluefin-cli/internal/shell"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var shellCmd = &cobra.Command{
-	Use:     "shell [shell] [on|off]",
-	Short:   "Toggle shell experience enhancements",
+	Use:   "shell [shell] [on|off]",
+	Short: "Toggle shell experience enhancements",
 	Long: `Enable or disable shell experience enhancements (modern aliases and tool initialization).
 	
 The Shell Experience provides:

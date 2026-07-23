@@ -1,6 +1,7 @@
 package app
 
 import (
+	"sort"
 	"strings"
 	"unicode"
 
@@ -54,11 +55,24 @@ func (s *MenuScreen) Reload() tea.Cmd {
 func (s *MenuScreen) CapturingInput() bool { return s.filtering }
 
 func (s *MenuScreen) visible() []int {
-	idx := make([]int, 0, len(s.items))
-	for i, it := range s.items {
-		if s.query == "" || fuzzyMatch(strings.ToLower(it.Label), strings.ToLower(s.query)) {
-			idx = append(idx, i)
+	if s.query == "" {
+		idx := make([]int, len(s.items))
+		for i := range s.items {
+			idx[i] = i
 		}
+		return idx
+	}
+	type scored struct{ idx, score int }
+	matches := make([]scored, 0, len(s.items))
+	for i, it := range s.items {
+		if sc, ok := fuzzyScore(strings.ToLower(it.Label), strings.ToLower(s.query)); ok {
+			matches = append(matches, scored{i, sc})
+		}
+	}
+	sort.SliceStable(matches, func(a, b int) bool { return matches[a].score > matches[b].score })
+	idx := make([]int, len(matches))
+	for i, m := range matches {
+		idx[i] = m.idx
 	}
 	return idx
 }
@@ -170,6 +184,19 @@ func (s *MenuScreen) View(width, height int) string {
 	// is too small for cards.
 	cards := width >= 56 && height >= len(vis)*2+2
 
+	// Viewport: when the list is taller than the body, window it around the
+	// cursor and mark the clipped ends.
+	rowsPer := 1
+	if cards {
+		rowsPer = 2
+	}
+	avail := max((height-2)/rowsPer, 1)
+	start := 0
+	if len(vis) > avail {
+		start = min(max(s.cursor-avail/2, 0), len(vis)-avail)
+	}
+	end := min(start+avail, len(vis))
+
 	rowWidth := max(width-2, 10)
 	selLabel := lipgloss.NewStyle().Foreground(t.Accent).Bold(true).Background(t.SelectedBackground)
 	selDesc := lipgloss.NewStyle().Foreground(t.TextMuted).Background(t.SelectedBackground)
@@ -186,7 +213,11 @@ func (s *MenuScreen) View(width, height int) string {
 		return styled
 	}
 
-	for row, i := range vis {
+	if start > 0 {
+		b.WriteString(hintStyle.Render("   … more above") + "\n")
+	}
+	for row := start; row < end; row++ {
+		i := vis[row]
 		it := s.items[i]
 		label := it.Label
 		if it.Icon != "" {
@@ -219,6 +250,9 @@ func (s *MenuScreen) View(width, height int) string {
 			}
 		}
 	}
+	if end < len(vis) {
+		b.WriteString(hintStyle.Render("   … more below") + "\n")
+	}
 	return b.String()
 }
 
@@ -232,19 +266,35 @@ func (s *MenuScreen) KeyHints() []KeyHint {
 
 // fuzzyMatch reports whether needle is a subsequence of haystack.
 func fuzzyMatch(haystack, needle string) bool {
+	_, ok := fuzzyScore(haystack, needle)
+	return ok
+}
+
+// fuzzyScore reports whether needle is a subsequence of haystack and how
+// good the match is: tighter spans, earlier starts, and prefix matches
+// score higher, so "sta" ranks "Starship" above "Install Apps".
+func fuzzyScore(haystack, needle string) (int, bool) {
 	if needle == "" {
-		return true
+		return 0, true
 	}
-	i := 0
-	for _, r := range haystack {
+	i, first, last := 0, -1, -1
+	for pos, r := range haystack {
 		if rune(needle[i]) == r {
+			if first < 0 {
+				first = pos
+			}
+			last = pos
 			i++
 			if i == len(needle) {
-				return true
+				score := -(last - first) - first
+				if first == 0 {
+					score += 100
+				}
+				return score, true
 			}
 		}
 	}
-	return false
+	return 0, false
 }
 
 func isPrintable(s string) bool {

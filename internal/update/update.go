@@ -8,8 +8,11 @@ package update
 import (
 	"archive/tar"
 	"archive/zip"
+	"bufio"
 	"bytes"
 	"compress/gzip"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -167,6 +170,10 @@ func Apply(rel *Release, progress io.Writer) error {
 		return fmt.Errorf("downloading update: %w", err)
 	}
 
+	if err := verifyChecksum(rel, wanted, data); err != nil {
+		return err
+	}
+
 	bin, err := extractBinary(data, ext, binName)
 	if err != nil {
 		return err
@@ -178,6 +185,55 @@ func Apply(rel *Release, progress io.Writer) error {
 			return fmt.Errorf("update failed and rollback failed (reinstall manually): %w", rerr)
 		}
 		return fmt.Errorf("update failed (rolled back): %w", err)
+	}
+	return nil
+}
+
+// verifyChecksum checks the downloaded archive against the release's
+// checksums.txt (published by goreleaser). A release without a checksums
+// asset is rejected: an attacker who can tamper with archives could also
+// drop the checksum file, so its absence must not disable verification.
+func verifyChecksum(rel *Release, assetName string, data []byte) error {
+	var url string
+	for _, a := range rel.Assets {
+		if a.Name == "checksums.txt" {
+			url = a.BrowserDownloadURL
+			break
+		}
+	}
+	if url == "" {
+		return fmt.Errorf("release %s has no checksums.txt; refusing unverified update", rel.TagName)
+	}
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		return fmt.Errorf("fetching checksums: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("fetching checksums: server returned %s", resp.Status)
+	}
+
+	want := ""
+	sc := bufio.NewScanner(io.LimitReader(resp.Body, 1<<20))
+	for sc.Scan() {
+		fields := strings.Fields(sc.Text())
+		if len(fields) == 2 && fields[1] == assetName {
+			want = strings.ToLower(fields[0])
+			break
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return fmt.Errorf("reading checksums: %w", err)
+	}
+	if want == "" {
+		return fmt.Errorf("checksums.txt has no entry for %s; refusing unverified update", assetName)
+	}
+
+	sum := sha256.Sum256(data)
+	if got := hex.EncodeToString(sum[:]); got != want {
+		return fmt.Errorf("checksum mismatch for %s: got %s, want %s", assetName, got, want)
 	}
 	return nil
 }

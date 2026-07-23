@@ -5,15 +5,15 @@ import (
 	"strings"
 
 	"charm.land/huh/v2"
+	"github.com/spf13/cobra"
 	"github.com/tuna-os/bluefin-cli/internal/env"
 	"github.com/tuna-os/bluefin-cli/internal/install"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
-	"github.com/spf13/cobra"
 )
 
 var installCmd = &cobra.Command{
-	Use:     "install [bundle]",
-	Short:   "Install tool bundles",
+	Use:   "install [bundle]",
+	Short: "Install tool bundles",
 	Long: `Install predefined bundles or custom Brewfiles.
 
 Available bundles:
@@ -365,5 +365,3 @@ func runWallpapersMenu() error {
 
 	return maybeHandleWindowsThemePostInstall(nil, selected)
 }
-
-

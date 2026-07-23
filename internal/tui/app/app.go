@@ -80,30 +80,37 @@ const (
 	minBodyLines = 3
 )
 
+// toastDuration is how long a toast stays visible; a variable so tests can
+// shrink it instead of sleeping.
+var toastDuration = 4 * time.Second
+
 // Model is the root shell model.
 type Model struct {
-	stack    []Screen
-	width    int
-	height   int
-	theme    theme.Theme
-	showHelp bool
-	toast    string
-	toastErr bool
-	dino     dino
-	quitting bool
+	stack     []Screen
+	width     int
+	height    int
+	theme     theme.Theme
+	showHelp  bool
+	toast     string
+	toastErr  bool
+	dino      dino
+	quitting  bool
+	extraInit []tea.Cmd
 }
 
-// New creates the shell with the given root screen.
-func New(root Screen) Model {
+// New creates the shell with the given root screen. Any extra commands run
+// alongside the root screen's Init (e.g. a background update check).
+func New(root Screen, extraInit ...tea.Cmd) Model {
 	return Model{
-		stack: []Screen{root},
-		theme: theme.DefaultTheme,
+		stack:     []Screen{root},
+		theme:     theme.DefaultTheme,
+		extraInit: extraInit,
 	}
 }
 
 // Run starts the shell program on the terminal.
-func Run(root Screen) error {
-	_, err := tea.NewProgram(New(root)).Run()
+func Run(root Screen, extraInit ...tea.Cmd) error {
+	_, err := tea.NewProgram(New(root, extraInit...)).Run()
 	return err
 }
 
@@ -117,7 +124,8 @@ func (m Model) capturing() bool {
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(m.top().Init(), m.dino.tick(), tea.RequestBackgroundColor)
+	cmds := append([]tea.Cmd{m.top().Init(), m.dino.tick(), tea.RequestBackgroundColor}, m.extraInit...)
+	return tea.Batch(cmds...)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -154,7 +162,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case ToastMsg:
 		m.toast, m.toastErr = msg.Text, msg.IsErr
-		return m, tea.Tick(4*time.Second, func(time.Time) tea.Msg { return toastExpireMsg{} })
+		return m, tea.Tick(toastDuration, func(time.Time) tea.Msg { return toastExpireMsg{} })
 
 	case toastExpireMsg:
 		m.toast = ""

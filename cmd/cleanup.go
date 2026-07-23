@@ -3,14 +3,14 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/spf13/cobra"
 	"github.com/tuna-os/bluefin-cli/internal/shell"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
-	"github.com/spf13/cobra"
 )
 
 var cleanupCmd = &cobra.Command{
-	Use:     "cleanup",
-	Short:   "Uninstall Bluefin shell setup and managed tools (alias for uninstall)",
+	Use:   "cleanup",
+	Short: "Uninstall Bluefin shell setup and managed tools (alias for uninstall)",
 	Long: `Remove Bluefin shell initialization setup across all supported shells.
 By default, this command also attempts to uninstall managed software and modules.`,
 	RunE: func(cmd *cobra.Command, args []string) error {

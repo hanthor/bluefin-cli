@@ -12,10 +12,10 @@ import (
 	"time"
 
 	"charm.land/huh/v2"
+	"github.com/spf13/cobra"
 	"github.com/tuna-os/bluefin-cli/internal/env"
 	"github.com/tuna-os/bluefin-cli/internal/sunset"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
-	"github.com/spf13/cobra"
 )
 
 var (
@@ -28,8 +28,8 @@ var (
 )
 
 var sunsetCmd = &cobra.Command{
-	Use:     "sunset",
-	Short:   "Manage solar-based theme and wallpaper switching",
+	Use:   "sunset",
+	Short: "Manage solar-based theme and wallpaper switching",
 	Long:  `Automatically switch between light and dark themes and different wallpapers based on sunrise and sunset times for your location.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Handle WSL Delegation
