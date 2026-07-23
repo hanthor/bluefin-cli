@@ -56,4 +56,5 @@ jobs:
           WINGET_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           SCOOP_BUCKET_TOKEN: ${{ secrets.SCOOP_BUCKET_TOKEN }}
+          AUR_KEY: ${{ secrets.AUR_KEY }}
         run: npx semantic-release

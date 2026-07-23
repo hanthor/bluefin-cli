@@ -4,16 +4,24 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"sync"
 
+	"time"
+
 	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/tuna-os/bluefin-cli/internal/config"
 	"github.com/tuna-os/bluefin-cli/internal/env"
 	"github.com/tuna-os/bluefin-cli/internal/install"
 	"github.com/tuna-os/bluefin-cli/internal/shell"
 	"github.com/tuna-os/bluefin-cli/internal/status"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
 	"github.com/tuna-os/bluefin-cli/internal/tui/app"
+	"github.com/tuna-os/bluefin-cli/internal/update"
 )
 
 var menuCmd = &cobra.Command{
@@ -21,7 +29,7 @@ var menuCmd = &cobra.Command{
 	Short: "Open the interactive Bluefin main menu",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		registerPaletteActions()
-		return app.Run(mainMenuScreen())
+		return app.Run(mainMenuScreen(), checkForUpdate)
 	},
 }
 
@@ -29,40 +37,63 @@ func init() {
 	rootCmd.AddCommand(menuCmd)
 }
 
+// checkForUpdate runs in the background when the menu starts and surfaces a
+// toast when a newer release exists. Failures are silent — an update nudge
+// is never worth an error message — and the GitHub API is only asked once
+// per day.
+func checkForUpdate() tea.Msg {
+	if last := viper.GetInt64("update.last_check"); time.Since(time.Unix(last, 0)) < 24*time.Hour {
+		return nil
+	}
+	viper.Set("update.last_check", time.Now().Unix())
+	_ = config.Save()
+	rel, err := update.Latest()
+	if err != nil || !update.IsNewer(version, rel.TagName) {
+		return nil
+	}
+	hint := "bluefin-cli update"
+	if h := update.Detect().UpdateHint(); h != "" {
+		hint = h
+	}
+	return app.ToastMsg{Text: fmt.Sprintf("⬆ %s available — run: %s", rel.TagName, hint)}
+}
+
 func mainMenuScreen() app.Screen {
 	return app.NewMenu("Home", nil, mainMenuItems, mainMenuSelect)
 }
 
 func mainMenuItems() []app.MenuItem {
-	shellHint := "Disabled"
-	for _, enabled := range shell.CheckStatus() {
+	// Show exactly which shells have the experience enabled, not a vague
+	// "Enabled" that may not match the user's current shell.
+	var enabledShells []string
+	for sh, enabled := range shell.CheckStatus() {
 		if enabled {
-			shellHint = "Enabled"
-			break
+			enabledShells = append(enabledShells, sh)
 		}
+	}
+	sort.Strings(enabledShells)
+	shellHint := "off"
+	if len(enabledShells) > 0 {
+		shellHint = strings.Join(enabledShells, " ") + " ✓"
 	}
 
 	items := []app.MenuItem{
-		{Icon: "📊", Label: "Status", Value: "status"},
-		{Icon: "🐚", Label: "Bluefin Shell", Value: "shell", Hint: shellHint, Submenu: true},
-		{Icon: "📦", Label: "Install Apps", Value: "bundles", Submenu: true},
+		{Icon: "📊", Label: "Status", Value: "status", Desc: "Environment health at a glance"},
+		{Icon: "🩺", Label: "Doctor", Value: "doctor", Desc: "Diagnose setup problems with fix hints"},
+		{Icon: "🐚", Label: "Bluefin Shell", Value: "shell", Desc: "Aliases, prompt, and modern CLI tools", Hint: shellHint, Submenu: true},
+		{Icon: "📦", Label: "Install Apps", Value: "bundles", Desc: "Curated tool bundles", Submenu: true},
 	}
 	items = append(items, extraMenuItems()...)
-	items = append(items, app.MenuItem{Icon: "👋", Label: "Exit", Value: "exit"})
+	items = append(items, app.MenuItem{Icon: "👋", Label: "Exit", Value: "exit", Desc: "Back to your shell"})
 	return items
 }
 
 func mainMenuSelect(it app.MenuItem) tea.Cmd {
 	switch it.Value {
 	case "status":
-		return app.RunLegacy(func() error {
-			tui.ClearScreen()
-			if err := status.Show(); err != nil {
-				return err
-			}
-			tui.Pause()
-			return nil
-		})
+		return app.Push(app.NewText("Status", status.Render))
+	case "doctor":
+		return doctorScreenCmd()
 	case "shell":
 		return app.Push(shellMenuScreen())
 	case "bundles":
@@ -93,11 +124,11 @@ func shellMenuScreen() app.Screen {
 			toggle = fmt.Sprintf("Disable for current shell (%s)", current)
 		}
 		return []app.MenuItem{
-			{Icon: "🔄", Label: toggle, Value: "toggle_current"},
-			{Icon: "🔧", Label: "Configure Components", Value: "components", Submenu: true},
-			{Icon: "📰", Label: "MOTD Settings", Value: "motd", Submenu: true},
-			{Icon: "🐚", Label: "Other Shells", Value: "shells", Submenu: true},
-			{Icon: "🎨", Label: "Advanced", Value: "advanced", Submenu: true},
+			{Icon: "🔄", Label: toggle, Value: "toggle_current", Desc: "One switch for the whole experience"},
+			{Icon: "🔧", Label: "Configure Components", Value: "components", Desc: "Pick which tools load with your shell", Submenu: true},
+			{Icon: "📰", Label: "MOTD Settings", Value: "motd", Desc: "Message of the day on new terminals", Submenu: true},
+			{Icon: "🐚", Label: "Other Shells", Value: "shells", Desc: "Enable for bash, zsh, or fish", Submenu: true},
+			{Icon: "🎨", Label: "Advanced", Value: "advanced", Desc: "Fine-grained shell integration", Submenu: true},
 		}
 	}
 	return app.NewMenu("Shell", nil, items, func(it app.MenuItem) tea.Cmd {
@@ -105,19 +136,80 @@ func shellMenuScreen() app.Screen {
 		case "toggle_current":
 			current := currentShellName()
 			enabled := shell.CheckStatus()[current]
-			return app.RunLegacy(func() error {
-				return shell.Toggle(current, !enabled)
-			})
+			return tea.Sequence(func() tea.Msg {
+				if err := shell.Toggle(current, !enabled); err != nil {
+					return app.ToastMsg{Text: "Error: " + err.Error(), IsErr: true}
+				}
+				if enabled {
+					return app.ToastMsg{Text: "Shell experience disabled for " + current + "."}
+				}
+				return app.ToastMsg{Text: "Shell experience enabled for " + current + "."}
+			}, app.ReloadTop())
 		case "components":
-			return app.RunLegacy(configureShellTools)
+			return app.Push(componentsFormScreen())
 		case "motd":
-			return app.RunLegacy(runMotdMenu)
+			return app.Push(motdMenuScreen())
 		case "shells":
-			return app.RunLegacy(shellShellsMenu)
+			return app.Push(shellsFormScreen())
 		case "advanced":
-			return app.RunLegacy(runAdvancedMenu)
+			return app.Push(advancedMenuScreen())
 		}
 		return nil
+	})
+}
+
+// componentsFormScreen hosts the shell-tools multiselect natively; the save
+// is instant, and the brew-driven tool installation runs in a RunnerScreen.
+func componentsFormScreen() app.Screen {
+	current := currentShellName()
+	var selected []string
+
+	build := func() *huh.Form {
+		cfg, err := shell.LoadConfig(current)
+		if err != nil {
+			cfg = shell.DefaultConfig(current)
+		}
+		tools := shell.ToolsForShell(current)
+		selected = selected[:0]
+		options := make([]huh.Option[string], 0, len(tools))
+		for _, tool := range tools {
+			if cfg.IsEnabled(tool.Name) {
+				selected = append(selected, tool.Name)
+			}
+			options = append(options,
+				huh.NewOption(fmt.Sprintf("%s (%s)", tool.Name, tool.Description), tool.Name))
+		}
+		return huh.NewForm(huh.NewGroup(
+			huh.NewMultiSelect[string]().
+				Title("Select tools to enable").
+				Description("Uncheck to disable specific tools").
+				Options(options...).
+				Value(&selected),
+		)).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
+	}
+
+	return app.NewForm("Components", build, func(aborted bool) tea.Cmd {
+		if aborted {
+			return nil
+		}
+		newCfg := shell.DefaultConfig(current)
+		on := make(map[string]bool, len(selected))
+		for _, s := range selected {
+			on[s] = true
+		}
+		for _, tool := range shell.ToolsForShell(current) {
+			newCfg.SetEnabled(tool.Name, on[tool.Name])
+		}
+		if err := shell.SaveConfig(newCfg); err != nil {
+			return app.Toast("Error: "+err.Error(), true)
+		}
+		return tea.Sequence(
+			app.Push(app.NewRunner("Installing tools", func() error {
+				shell.InstallTools(current, newCfg)
+				return nil
+			})),
+			app.Toast("Components saved.", false),
+		)
 	})
 }
 
@@ -137,13 +229,105 @@ func bundlesMenuScreen() app.Screen {
 		cats := availableBundleCategories()
 		out := make([]app.MenuItem, 0, len(cats))
 		for _, cat := range cats {
-			out = append(out, app.MenuItem{Label: cat.Label, Value: cat.ID, Submenu: true})
+			out = append(out, app.MenuItem{Label: cat.Label, Value: cat.ID, Desc: cat.Desc, Submenu: true})
 		}
 		return out
 	}
 	return app.NewMenu("Install Apps", nil, items, func(it app.MenuItem) tea.Cmd {
-		id := it.Value
-		return app.RunLegacy(func() error { return runPackageMenu(id) })
+		return packagesFlow(it.Value, it.Label)
+	})
+}
+
+// packagesFlow loads a bundle in the background (the menu stays live), then
+// pushes a native multiselect; confirmed changes run in a native RunnerScreen
+// that captures brew output.
+func packagesFlow(id, label string) tea.Cmd {
+	return tea.Batch(
+		app.Toast("Loading "+label+"…", false),
+		func() tea.Msg {
+			pkgs, err := install.GetBundlePackages(id)
+			if err != nil {
+				return app.ToastMsg{Text: "Error: " + err.Error(), IsErr: true}
+			}
+			pkgs = install.MarkInstalled(pkgs)
+			return app.PushMsg{Screen: packagesFormScreen(label, pkgs)}
+		},
+	)
+}
+
+func packagesFormScreen(label string, pkgs []install.Package) app.Screen {
+	var selected []string
+
+	build := func() *huh.Form {
+		selected = selected[:0]
+		opts := make([]huh.Option[string], 0, len(pkgs))
+		for _, p := range pkgs {
+			if p.Installed {
+				selected = append(selected, p.ID)
+			}
+			opts = append(opts, huh.NewOption(p.Name, p.ID))
+		}
+		return huh.NewForm(huh.NewGroup(
+			huh.NewMultiSelect[string]().
+				Title("Select packages").
+				Description("Pre-checked = already installed. Space toggles, enter confirms.").
+				Options(opts...).
+				Value(&selected),
+		)).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
+	}
+
+	return app.NewForm(label, build, func(aborted bool) tea.Cmd {
+		if aborted {
+			return nil
+		}
+		on := make(map[string]bool, len(selected))
+		for _, id := range selected {
+			on[id] = true
+		}
+		var toInstall, toRemove []install.Package
+		for _, p := range pkgs {
+			switch {
+			case on[p.ID] && !p.Installed:
+				toInstall = append(toInstall, p)
+			case !on[p.ID] && p.Installed:
+				toRemove = append(toRemove, p)
+			}
+		}
+		if len(toInstall) == 0 && len(toRemove) == 0 {
+			return app.Toast("No changes selected.", false)
+		}
+		return app.Push(confirmChangesScreen(toInstall, toRemove))
+	})
+}
+
+func confirmChangesScreen(toInstall, toRemove []install.Package) app.Screen {
+	var lines []string
+	for _, p := range toInstall {
+		lines = append(lines, "+ "+p.Name)
+	}
+	for _, p := range toRemove {
+		lines = append(lines, "- "+p.Name)
+	}
+	confirmed := false
+
+	build := func() *huh.Form {
+		confirmed = false
+		return huh.NewForm(huh.NewGroup(
+			huh.NewConfirm().
+				Title("Apply these changes?").
+				Description(strings.Join(lines, "\n")).
+				Value(&confirmed),
+		)).WithTheme(tui.AppTheme).WithKeyMap(tui.ConfirmKeyMap())
+	}
+
+	return app.NewForm("Confirm", build, func(aborted bool) tea.Cmd {
+		if aborted || !confirmed {
+			return nil
+		}
+		return app.Push(app.NewRunner("Applying changes", func() error {
+			applyPackageChanges(toInstall, toRemove)
+			return nil
+		}))
 	})
 }
 
@@ -157,13 +341,25 @@ func registerPaletteActions() {
 			ID: "status", Icon: "📊", Label: "Show Status", Section: "Home",
 			Do: func() tea.Cmd { return mainMenuSelect(app.MenuItem{Value: "status"}) },
 		})
+		app.Register(app.Action{
+			ID: "dino", Icon: "🦕", Label: "Dino Run", Section: "Fun",
+			Do: func() tea.Cmd { return app.Push(gameScreen()) },
+		})
+		app.Register(app.Action{
+			ID: "doctor", Icon: "🩺", Label: "Doctor", Section: "Home",
+			Do: func() tea.Cmd { return doctorScreenCmd() },
+		})
+		app.Register(app.Action{
+			ID: "update", Icon: "⬆", Label: "Check for Updates", Section: "Home",
+			Do: func() tea.Cmd {
+				return app.Push(app.NewRunner("Update", func() error { return runUpdate(false) }))
+			},
+		})
 		for _, cat := range availableBundleCategories() {
-			id := cat.ID
+			id, label := cat.ID, cat.Label
 			app.Register(app.Action{
-				ID: "install-" + id, Label: cat.Label, Section: "Install",
-				Do: func() tea.Cmd {
-					return app.RunLegacy(func() error { return runPackageMenu(id) })
-				},
+				ID: "install-" + id, Label: label, Section: "Install",
+				Do: func() tea.Cmd { return packagesFlow(id, label) },
 			})
 		}
 		for _, it := range extraMenuItems() {

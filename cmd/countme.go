@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/tuna-os/bluefin-cli/internal/countme"
 	"github.com/spf13/cobra"
+	"github.com/tuna-os/bluefin-cli/internal/countme"
 )
 
 var (
@@ -14,8 +14,8 @@ var (
 )
 
 var countmeCmd = &cobra.Command{
-	Use:     "countme",
-	Short:   "Manage anonymous usage counting",
+	Use:   "countme",
+	Short: "Manage anonymous usage counting",
 	Long: `bluefin-cli participates in Fedora's countme protocol to report
 anonymous install counts alongside native Bluefin Linux installs.
 

@@ -34,7 +34,7 @@ const (
 	// Weekly window constants from the Fedora countme spec.
 	// Windows are 604800-second (7-day) periods aligned to 1970-01-05 00:00:00 UTC.
 	countmeWindow = 7 * 24 * 60 * 60 // 604800 seconds
-	countmeOffset = 345600             // offset to 1970-01-05 (Monday)
+	countmeOffset = 345600           // offset to 1970-01-05 (Monday)
 
 	// Age bucket boundaries (number of windows elapsed since first count).
 	// Bucket 1: first week, 2: first month, 3: first 6 months, 4: older.

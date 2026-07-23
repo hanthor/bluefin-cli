@@ -163,5 +163,3 @@ func ThemesFromWallpaperCasks(casks []string) []string {
 	sort.Strings(themes)
 	return themes
 }
-
-

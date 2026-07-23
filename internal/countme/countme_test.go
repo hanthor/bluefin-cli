@@ -20,11 +20,11 @@ import (
 
 func TestWindowNumber(t *testing.T) {
 	tests := []struct {
-		name  string
-		unix  int64
-		want  int64
+		name string
+		unix int64
+		want int64
 	}{
-		{"epoch (1970-01-01)", 0, 0},   // Before first window — integer division rounds to 0
+		{"epoch (1970-01-01)", 0, 0},      // Before first window — integer division rounds to 0
 		{"first window start", 345600, 0}, // 1970-01-05 00:00:00 UTC
 		{"first window +1s", 345601, 0},
 		{"second window start", 345600 + 604800, 1},

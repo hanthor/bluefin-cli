@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 
 	"charm.land/huh/v2"
+	"github.com/spf13/cobra"
 	"github.com/tuna-os/bluefin-cli/internal/motd"
 	"github.com/tuna-os/bluefin-cli/internal/shell"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
-	"github.com/spf13/cobra"
 )
 
 var motdCmd = &cobra.Command{
-	Use:     "motd",
-	Short:   "Manage Message of the Day",
+	Use:   "motd",
+	Short: "Manage Message of the Day",
 	Long:  `Configure and display the Message of the Day (MOTD) with system info and tips.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runMotdMenu()

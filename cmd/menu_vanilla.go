@@ -9,20 +9,20 @@ import (
 
 func extraMenuItems() []app.MenuItem {
 	return []app.MenuItem{
-		{Icon: "🖼 ", Label: "Wallpapers", Value: "wallpapers", Submenu: true},
-		{Icon: "🔤", Label: "Fonts", Value: "fonts", Submenu: true},
-		{Icon: "🚀", Label: "Starship Theme", Value: "starship", Submenu: true},
+		{Icon: "🖼 ", Label: "Wallpapers", Value: "wallpapers", Desc: "Bluefin wallpaper gallery", Submenu: true},
+		{Icon: "🔤", Label: "Fonts", Value: "fonts", Desc: "Nerd Fonts for your terminal", Submenu: true},
+		{Icon: "🚀", Label: "Starship Theme", Value: "starship", Desc: "Prompt presets & customization", Submenu: true},
 	}
 }
 
 func extraMenuDo(value string) tea.Cmd {
 	switch value {
 	case "wallpapers":
-		return app.RunLegacy(runWallpapersMenu)
+		return wallpapersFlow()
 	case "fonts":
-		return app.RunLegacy(runFontsMenu)
+		return fontsFlow()
 	case "starship":
-		return app.RunLegacy(runStarshipMenu)
+		return starshipFlow()
 	}
 	return nil
 }

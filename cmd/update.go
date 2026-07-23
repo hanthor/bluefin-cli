@@ -18,7 +18,14 @@ Binaries installed via a package manager (Homebrew, Winget, Scoop) are not
 self-updated; this command tells you the right upgrade command instead.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		checkOnly, _ := cmd.Flags().GetBool("check")
+		return runUpdate(checkOnly)
+	},
+}
 
+// runUpdate is shared by the CLI command and the menu's palette action
+// (where it runs inside a RunnerScreen with output captured).
+func runUpdate(checkOnly bool) error {
+	{
 		rel, err := update.Latest()
 		if err != nil {
 			return err
@@ -49,9 +56,9 @@ self-updated; this command tells you the right upgrade command instead.`,
 		if err := update.Apply(rel, os.Stdout); err != nil {
 			return err
 		}
-		fmt.Println(tui.SuccessStyle.Render(fmt.Sprintf("✓ Updated to %s.", rel.TagName)))
+		fmt.Println(tui.SuccessStyle.Render(fmt.Sprintf("✓ Updated to %s. Restart bluefin-cli to use it.", rel.TagName)))
 		return nil
-	},
+	}
 }
 
 func init() {

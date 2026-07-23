@@ -5,8 +5,8 @@ import (
 	"os/exec"
 
 	"charm.land/huh/v2"
-	"github.com/tuna-os/bluefin-cli/internal/tui"
 	"github.com/spf13/cobra"
+	"github.com/tuna-os/bluefin-cli/internal/tui"
 )
 
 // availableFonts maps display name → brew cask name
@@ -65,7 +65,17 @@ func runFontsMenu() error {
 		return nil
 	}
 
-	for _, cask := range selected {
+	installFontCasks(selected)
+
+	err := maybeHandlePostFontInstall()
+	tui.Pause()
+	return err
+}
+
+// installFontCasks installs each font cask with brew, printing progress
+// (captured by the native RunnerScreen when run from the menu).
+func installFontCasks(casks []string) {
+	for _, cask := range casks {
 		fmt.Println(tui.InfoStyle.Render("Installing " + cask + "..."))
 		cmd := exec.Command("brew", "install", "--cask", cask)
 		cmd.Stdout = nil
@@ -75,10 +85,6 @@ func runFontsMenu() error {
 			fmt.Println(tui.SuccessStyle.Render("✓ " + cask))
 		}
 	}
-
-	err := maybeHandlePostFontInstall()
-	tui.Pause()
-	return err
 }
 
 func init() {

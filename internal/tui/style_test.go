@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-
 )
 
 // ── Style presence tests ─────────────────────────────────────────────────────

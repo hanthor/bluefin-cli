@@ -5,15 +5,15 @@ import (
 	"strings"
 
 	"charm.land/huh/v2"
+	"github.com/spf13/cobra"
 	"github.com/tuna-os/bluefin-cli/internal/env"
 	"github.com/tuna-os/bluefin-cli/internal/install"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
-	"github.com/spf13/cobra"
 )
 
 var installCmd = &cobra.Command{
-	Use:     "install [bundle]",
-	Short:   "Install tool bundles",
+	Use:   "install [bundle]",
+	Short: "Install tool bundles",
 	Long: `Install predefined bundles or custom Brewfiles.
 
 Available bundles:
@@ -95,19 +95,20 @@ var installWallpapersCleanupCmd = &cobra.Command{
 }
 
 type bundleCategory struct {
-	Label    string
-	ID       string
+	Label     string
+	ID        string
+	Desc      string
 	LinuxOnly bool
 }
 
 var bundleCategories = []bundleCategory{
-	{Label: "🤖 AI Tools", ID: "ai"},
-	{Label: "💻 CLI Essentials", ID: "cli"},
-	{Label: "🌐 CNCF Tools", ID: "cncf"},
-	{Label: "🧪 Experimental IDE", ID: "experimental-ide"},
-	{Label: "📝 IDE Tools", ID: "ide"},
-	{Label: "🎡 Kubernetes Tools", ID: "k8s"},
-	{Label: "🐧 Full GNOME Desktop", ID: "full-desktop", LinuxOnly: true},
+	{Label: "🤖 AI Tools", ID: "ai", Desc: "Coding agents & LLM tools"},
+	{Label: "💻 CLI Essentials", ID: "cli", Desc: "Everyday terminal essentials"},
+	{Label: "🌐 CNCF Tools", ID: "cncf", Desc: "Cloud-native toolchain"},
+	{Label: "🧪 Experimental IDE", ID: "experimental-ide", Desc: "Bleeding-edge editors"},
+	{Label: "📝 IDE Tools", ID: "ide", Desc: "Editors & IDEs"},
+	{Label: "🎡 Kubernetes Tools", ID: "k8s", Desc: "Kubernetes workflow"},
+	{Label: "🐧 Full GNOME Desktop", ID: "full-desktop", Desc: "Complete desktop environment", LinuxOnly: true},
 }
 
 func runBundlesMenu() error {
@@ -183,11 +184,7 @@ func runPackageMenu(bundleName string) error {
 
 	opts := make([]huh.Option[string], 0, len(pkgs))
 	for _, p := range pkgs {
-		label := p.Name
-		if p.Installed {
-			label += " ✓"
-		}
-		opts = append(opts, huh.NewOption(label, p.ID))
+		opts = append(opts, huh.NewOption(p.Name, p.ID))
 	}
 
 	selected := make([]string, len(preSelected))
@@ -199,8 +196,8 @@ func runPackageMenu(bundleName string) error {
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewMultiSelect[string]().
-				Title("Select packages (✓ = installed)").
-				Description("Space toggles. Enter confirms.").
+				Title("Select packages").
+				Description("Pre-checked = already installed. Space toggles, enter confirms.").
 				Options(opts...).
 				Value(&selected),
 		),
@@ -273,6 +270,18 @@ func runPackageMenu(bundleName string) error {
 	tui.ClearScreen()
 	tui.RenderHeader("Bluefin CLI", "Install Apps > "+categoryLabel+" > Installing")
 
+	applyPackageChanges(toInstall, toRemove)
+
+	fmt.Println()
+	fmt.Println(tui.SuccessStyle.Render("✓ Done!"))
+	tui.Pause()
+	return nil
+}
+
+// applyPackageChanges installs and removes packages with the platform's
+// package manager, printing errors as it goes (used by both the legacy
+// flow and the native menu flow via the legacy bridge).
+func applyPackageChanges(toInstall, toRemove []install.Package) {
 	if env.IsWindows() {
 		if len(toInstall) > 0 {
 			var winPkgs []install.WindowsPackage
@@ -309,10 +318,6 @@ func runPackageMenu(bundleName string) error {
 		}
 	}
 
-	fmt.Println()
-	fmt.Println(tui.SuccessStyle.Render("✓ Done!"))
-	tui.Pause()
-	return nil
 }
 
 func runWallpapersMenu() error {
@@ -364,5 +369,3 @@ func runWallpapersMenu() error {
 
 	return maybeHandleWindowsThemePostInstall(nil, selected)
 }
-
-

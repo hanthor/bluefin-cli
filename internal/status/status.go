@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/term"
 	"github.com/tuna-os/bluefin-cli/internal/env"
 	"github.com/tuna-os/bluefin-cli/internal/install"
 	"github.com/tuna-os/bluefin-cli/internal/motd"
@@ -26,10 +27,23 @@ var (
 	labelStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
 )
 
-// Show displays the current configuration status
+// Show prints the status report to stdout, sized to the terminal.
 func Show() error {
-	fmt.Println(titleStyle.Render("Bluefin CLI Status"))
-	fmt.Println()
+	width, _, err := term.GetSize(os.Stdout.Fd())
+	if err != nil || width <= 0 {
+		width = 80
+	}
+	out, err := Render(width)
+	if err != nil {
+		return err
+	}
+	fmt.Println(out)
+	return nil
+}
+
+// Render builds the status report for the given width. Two columns need
+// ~76 cells; narrower widths stack vertically so the columns can't overlap.
+func Render(width int) (string, error) {
 
 	// --- Left Column ---
 	var leftCol string
@@ -224,13 +238,15 @@ func Show() error {
 		}
 	}
 
-	// Combine columns with padding
-	formatted := lipgloss.JoinHorizontal(lipgloss.Top,
-		lipgloss.NewStyle().Width(40).Render(leftCol),
-		string(rightCol),
-	)
+	var formatted string
+	if width < 76 {
+		formatted = leftCol + "\n" + rightCol
+	} else {
+		formatted = lipgloss.JoinHorizontal(lipgloss.Top,
+			lipgloss.NewStyle().Width(40).Render(leftCol),
+			rightCol,
+		)
+	}
 
-	fmt.Println(formatted)
-
-	return nil
+	return titleStyle.Render("Bluefin CLI Status") + "\n\n" + formatted, nil
 }

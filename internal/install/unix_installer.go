@@ -52,7 +52,6 @@ func (i *UnixInstaller) InstallBundle(packages ...string) error {
 	return cmd.Run()
 }
 
-
 func (i *UnixInstaller) InstallWallpapers(casks []string) error {
 	if err := ensureTap(wallpapersTap); err != nil {
 		return err

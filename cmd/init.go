@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tuna-os/bluefin-cli/internal/shell"
 	"github.com/spf13/cobra"
+	"github.com/tuna-os/bluefin-cli/internal/shell"
 )
 
 var (
@@ -14,8 +14,8 @@ var (
 )
 
 var initCmd = &cobra.Command{
-	Use:     "init [bash|zsh|fish|powershell|pwsh]",
-	Short:   "Generate shell initialization script",
+	Use:   "init [bash|zsh|fish|powershell|pwsh]",
+	Short: "Generate shell initialization script",
 	Long: `Generate the shell initialization script for bluefin-cli.
 Add the following to your shell configuration file:
 
