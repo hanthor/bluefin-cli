@@ -12,7 +12,7 @@ builds:
     env:
       - CGO_ENABLED=0
     ldflags:
-      - -s -w -X github.com/hanthor/bluefin-cli/cmd.version={{.Version}}
+      - -s -w -X github.com/tuna-os/bluefin-cli/cmd.version={{.Version}}
     goos:
       - linux
       - darwin
@@ -28,7 +28,7 @@ builds:
     flags:
       - -tags=extra
     ldflags:
-      - -s -w -X github.com/hanthor/bluefin-cli/cmd.version={{.Version}}
+      - -s -w -X github.com/tuna-os/bluefin-cli/cmd.version={{.Version}}
     goos:
       - linux
       - darwin
@@ -61,23 +61,66 @@ changelog:
 
 release:
   github:
-    owner: hanthor
+    owner: tuna-os
     name: bluefin-cli
   draft: false
   prerelease: auto
   name_template: "{{.Tag}}"
 
+# Binary formula published to the tuna-os tap on every release.
+# Requires the tuna-os/homebrew-tap repo to exist and a HOMEBREW_TAP_TOKEN
+# secret (PAT with contents:write on that repo). skip_upload: auto keeps
+# prereleases out of the tap.
+# NOTE: goreleaser deprecated `brews` in favor of `homebrew_casks`, but casks
+# are macOS-only and Linux users are a primary audience — keep the formula.
+brews:
+  - name: bluefin-cli
+    ids:
+      - standard
+    repository:
+      owner: tuna-os
+      name: homebrew-tap
+      branch: main
+      token: '{{ envOrDefault "HOMEBREW_TAP_TOKEN" "" }}'
+    directory: Formula
+    homepage: "https://github.com/tuna-os/bluefin-cli"
+    description: "Make your terminal experience awesome — shell config, tool bundles, and theming for any OS"
+    license: Apache-2.0
+    # Skip until the HOMEBREW_TAP_TOKEN secret is configured, so a missing
+    # token can't fail the release.
+    skip_upload: '{{ if envOrDefault "HOMEBREW_TAP_TOKEN" "" }}auto{{ else }}true{{ end }}'
+    test: |
+      assert_match version.to_s, shell_output("#{bin}/bluefin-cli --version")
+
+# Scoop manifest for Windows. Requires the tuna-os/scoop-bucket repo and the
+# same-style token secret.
+scoops:
+  - name: bluefin-cli
+    ids:
+      - standard
+    repository:
+      owner: tuna-os
+      name: scoop-bucket
+      branch: main
+      token: '{{ envOrDefault "SCOOP_BUCKET_TOKEN" "" }}'
+    homepage: "https://github.com/tuna-os/bluefin-cli"
+    description: "Make your terminal experience awesome — shell config, tool bundles, and theming for any OS"
+    license: Apache-2.0
+    # Skip until the SCOOP_BUCKET_TOKEN secret is configured, so a missing
+    # token can't fail the release.
+    skip_upload: '{{ if envOrDefault "SCOOP_BUCKET_TOKEN" "" }}auto{{ else }}true{{ end }}'
+
 winget:
   - name: BluefinCLI
     publisher: Hanthor
-    publisher_url: "https://github.com/hanthor"
-    publisher_support_url: "https://github.com/hanthor/bluefin-cli/issues"
+    publisher_url: "https://github.com/tuna-os"
+    publisher_support_url: "https://github.com/tuna-os/bluefin-cli/issues"
     package_identifier: Hanthor.BluefinCLI
     license: Apache-2.0
-    license_url: "https://github.com/hanthor/bluefin-cli/blob/master/LICENSE"
-    copyright: "Copyright 2025 Hanthor"
+    license_url: "https://github.com/tuna-os/bluefin-cli/blob/main/LICENSE"
+    copyright: "Copyright 2025 Bluefin CLI contributors"
     short_description: "Modern CLI for managing shell config and dev environment customization on Universal Blue."
-    homepage: "https://github.com/hanthor/bluefin-cli"
+    homepage: "https://github.com/tuna-os/bluefin-cli"
     tags:
       - cli
       - shell
@@ -85,12 +128,14 @@ winget:
       - universal-blue
     ids:
       - standard
-    skip_upload: auto
+    # Skip until the WINGET_TOKEN secret is configured, so a missing token
+    # can't fail the release.
+    skip_upload: '{{ if envOrDefault "WINGET_TOKEN" "" }}auto{{ else }}true{{ end }}'
     repository:
       owner: microsoft
       name: winget-pkgs
       branch: "bluefin-cli-{{.Version}}"
-      token: "{{ .Env.WINGET_TOKEN }}"
+      token: '{{ envOrDefault "WINGET_TOKEN" "" }}'
       pull_request:
         enabled: true
         draft: false
