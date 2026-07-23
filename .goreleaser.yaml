@@ -57,6 +57,20 @@ archives:
     name_template: >-
       {{ .ProjectName }}-plus_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}
 
+# Native Linux packages published as release assets, installable with
+# `dnf install <url>` / `dpkg -i` — no repo hosting needed to start.
+nfpms:
+  - id: packages
+    ids: [standard]
+    package_name: bluefin-cli
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [deb, rpm]
+    maintainer: "TunaOS <noreply@github.com>"
+    homepage: "https://github.com/tuna-os/bluefin-cli"
+    description: "Bring the Bluefin terminal experience to any machine."
+    license: "Apache-2.0"
+    bindir: /usr/bin
+
 checksum:
   name_template: 'checksums.txt'
 

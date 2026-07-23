@@ -47,6 +47,7 @@ func setDefaults() {
 	viper.SetDefault("bundles.base_url", "https://raw.githubusercontent.com/projectbluefin/common/main/system_files")
 	viper.SetDefault("bundles.default_path", "shared/usr/share/ublue-os/homebrew")
 	viper.SetDefault("theme", "catppuccin")
+	viper.SetDefault("ui.flavor", "auto")
 	viper.SetDefault("ui.dark_mode", true)
 }
 

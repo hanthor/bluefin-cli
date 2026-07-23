@@ -46,11 +46,38 @@ type Theme struct {
 	IsDark bool
 }
 
-// Resolve returns the theme for the given terminal background.
+// Flavor is the user-selected Catppuccin flavor name; empty means auto
+// (Latte on light terminals, Mocha on dark). Set from config at startup.
+var Flavor string
+
+// flavorByName maps config values to Catppuccin palettes.
+func flavorByName(name string) (catppuccin.Flavor, bool) {
+	switch name {
+	case "latte":
+		return catppuccin.Latte, true
+	case "frappe", "frappé":
+		return catppuccin.Frappe, true
+	case "macchiato":
+		return catppuccin.Macchiato, true
+	case "mocha":
+		return catppuccin.Mocha, true
+	}
+	return nil, false
+}
+
+// Flavors lists the accepted flavor config values.
+func Flavors() []string { return []string{"auto", "latte", "frappe", "macchiato", "mocha"} }
+
+// Resolve returns the theme for the given terminal background, honoring an
+// explicit Flavor override when set.
 func Resolve(isDark bool) Theme {
 	f := catppuccin.Latte
 	if isDark {
 		f = catppuccin.Mocha
+	}
+	if of, ok := flavorByName(Flavor); ok {
+		f = of
+		isDark = Flavor != "latte"
 	}
 	c := func(cc catppuccin.Color) color.Color { return lipgloss.Color(cc.Hex) }
 

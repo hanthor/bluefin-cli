@@ -35,6 +35,7 @@ var rootCmd = &cobra.Command{
 		if cmd.Name() != "countme" {
 			go countme.Count(version)
 		}
+		applyThemeFlavor()
 		return nil
 	},
 	// If no subcommand is provided, open the interactive main menu by default.
