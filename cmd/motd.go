@@ -2,14 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"charm.land/huh/v2"
 	"github.com/spf13/cobra"
 	"github.com/tuna-os/bluefin-cli/internal/motd"
-	"github.com/tuna-os/bluefin-cli/internal/shell"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
+	"github.com/tuna-os/bluefin-cli/internal/tui/app"
 )
 
 var motdCmd = &cobra.Command{
@@ -17,7 +15,7 @@ var motdCmd = &cobra.Command{
 	Short: "Manage Message of the Day",
 	Long:  `Configure and display the Message of the Day (MOTD) with system info and tips.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runMotdMenu()
+		return launchFlow(app.Push(motdMenuScreen()))
 	},
 }
 
@@ -92,68 +90,4 @@ func init() {
 	motdCmd.AddCommand(motdToggleCmd)
 	motdCmd.AddCommand(motdShowCmd)
 	motdCmd.AddCommand(motdConfigCmd)
-}
-
-func runMotdMenu() error {
-	for {
-		tui.ClearScreen()
-		tui.RenderHeader("Bluefin CLI", "Main Menu > Shell > MOTD")
-
-		// Load config to check if MOTD is enabled
-		// Determine shell (fallback to bash if unknown, as this affects defaults)
-		currentShellPath := os.Getenv("SHELL")
-		currentShell := filepath.Base(currentShellPath)
-		if currentShell == "" || currentShell == "." {
-			currentShell = "bash"
-		}
-
-		cfg, err := shell.LoadConfig(currentShell)
-		if err != nil {
-			cfg = shell.DefaultConfig(currentShell)
-		}
-		isEnabled := cfg.IsEnabled("Motd")
-
-		// Build toggle label based on current state
-		toggleLabel := "Enable MOTD"
-		if isEnabled {
-			toggleLabel = "Disable MOTD"
-		}
-
-		var action string
-		if err := huh.NewForm(
-			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("MOTD – What do you want to do?").
-					Options(
-						huh.NewOption(toggleLabel, "toggle_motd"),
-						huh.NewOption("Show MOTD", "show"),
-						huh.NewOption("Exit to Shell Menu", "exit"),
-					).
-					Value(&action),
-			),
-		).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap()).Run(); err != nil {
-			return huh.ErrUserAborted
-		}
-
-		switch action {
-		case "toggle_motd":
-			cfg.SetEnabled("Motd", !isEnabled)
-			if err := shell.SaveConfig(cfg); err != nil {
-				return fmt.Errorf("failed to save config: %w", err)
-			}
-			if !isEnabled {
-				fmt.Println(tui.SuccessStyle.Render("✓ MOTD enabled"))
-			} else {
-				fmt.Println(tui.SuccessStyle.Render("✓ MOTD disabled"))
-			}
-			tui.Pause()
-		case "show":
-			if err := motd.Show(); err != nil {
-				return err
-			}
-			tui.Pause()
-		case "exit":
-			return nil
-		}
-	}
 }

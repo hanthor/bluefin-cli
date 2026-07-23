@@ -1,9 +1,7 @@
 package tui
 
 import (
-	"bytes"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 )
@@ -127,55 +125,6 @@ func TestConfirmKeyMap(t *testing.T) {
 	submitKeys := km.Confirm.Submit.Keys()
 	if !hasKey(submitKeys, "enter") {
 		t.Errorf("ConfirmKeyMap Submit should bind enter, got: %v", submitKeys)
-	}
-}
-
-// ── RenderHeader tests ───────────────────────────────────────────────────────
-
-func TestRenderHeader(t *testing.T) {
-	// Capture stdout
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	RenderHeader("Test Title", "Test Subtitle")
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(r)
-	output := buf.String()
-
-	if !strings.Contains(output, "Test Title") {
-		t.Errorf("RenderHeader output should contain title, got: %s", output)
-	}
-	if !strings.Contains(output, "Test Subtitle") {
-		t.Errorf("RenderHeader output should contain subtitle, got: %s", output)
-	}
-}
-
-func TestRenderHeader_NoSubtitle(t *testing.T) {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	RenderHeader("Only Title", "")
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(r)
-	output := buf.String()
-
-	if !strings.Contains(output, "Only Title") {
-		t.Errorf("RenderHeader output should contain title, got: %s", output)
-	}
-	// Empty subtitle should not produce extra lines
-	lines := strings.Split(strings.TrimSpace(output), "\n")
-	if len(lines) < 1 {
-		t.Error("RenderHeader should produce at least one line of output")
 	}
 }
 

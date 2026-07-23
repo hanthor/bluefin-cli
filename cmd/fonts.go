@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os/exec"
 
-	"charm.land/huh/v2"
 	"github.com/spf13/cobra"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
 )
@@ -32,44 +31,8 @@ var fontsCmd = &cobra.Command{
 	Short: "Install individual development fonts",
 	Long:  `Select and install individual development fonts from a curated list.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runFontsMenu()
+		return launchFlow(fontsFlow())
 	},
-}
-
-func runFontsMenu() error {
-	tui.ClearScreen()
-	tui.RenderHeader("Bluefin CLI", "Main Menu > Fonts")
-
-	opts := make([]huh.Option[string], 0, len(availableFonts))
-	for _, f := range availableFonts {
-		opts = append(opts, huh.NewOption(f.Name, f.Cask))
-	}
-
-	var selected []string
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewMultiSelect[string]().
-				Title("Select fonts to install").
-				Options(opts...).
-				Value(&selected),
-		),
-	).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
-
-	if err := form.Run(); err != nil {
-		return nil
-	}
-
-	if len(selected) == 0 {
-		fmt.Println(tui.InfoStyle.Render("No fonts selected."))
-		tui.Pause()
-		return nil
-	}
-
-	installFontCasks(selected)
-
-	err := maybeHandlePostFontInstall()
-	tui.Pause()
-	return err
 }
 
 // installFontCasks installs each font cask with brew, printing progress

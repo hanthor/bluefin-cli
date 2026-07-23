@@ -2,13 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
-	"charm.land/huh/v2"
 	"github.com/spf13/cobra"
 	"github.com/tuna-os/bluefin-cli/internal/env"
 	"github.com/tuna-os/bluefin-cli/internal/install"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
+	"github.com/tuna-os/bluefin-cli/internal/tui/app"
 )
 
 var installCmd = &cobra.Command{
@@ -28,7 +27,7 @@ Or provide a path to a local Brewfile.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
-			return runBundlesMenu()
+			return launchFlow(app.Push(bundlesMenuScreen()))
 		}
 
 		return install.Bundle(args[0])
@@ -70,7 +69,7 @@ var installWallpapersCmd = &cobra.Command{
 			return maybeHandleWindowsThemePostInstall(cmd, args)
 		}
 
-		return runWallpapersMenu()
+		return launchFlow(wallpapersFlow())
 	},
 }
 
@@ -111,173 +110,9 @@ var bundleCategories = []bundleCategory{
 	{Label: "🐧 Full GNOME Desktop", ID: "full-desktop", Desc: "Complete desktop environment", LinuxOnly: true},
 }
 
-func runBundlesMenu() error {
-	for {
-		tui.ClearScreen()
-		tui.RenderHeader("Bluefin CLI", "Main Menu > Install Apps")
-
-		opts := make([]huh.Option[string], 0)
-		for _, cat := range bundleCategories {
-			if cat.LinuxOnly && (!install.IsLinux() || !install.IsGnome()) {
-				continue
-			}
-			opts = append(opts, huh.NewOption(cat.Label+" ❯", cat.ID))
-		}
-
-		var category string
-		form := huh.NewForm(
-			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("Select a category").
-					Options(opts...).
-					Value(&category),
-			),
-		).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
-
-		if err := form.Run(); err != nil {
-			if err == huh.ErrUserAborted {
-				return nil
-			}
-			return fmt.Errorf("form error: %w", err)
-		}
-
-		if err := runPackageMenu(category); err != nil {
-			if err == huh.ErrUserAborted {
-				continue
-			}
-			fmt.Println(tui.ErrorStyle.Render(fmt.Sprintf("Error: %v", err)))
-			tui.Pause()
-		}
-	}
-}
-
 // runPackageMenu shows a per-category multi-select with installed packages pre-checked,
 // then diffs and applies installs/uninstalls with confirmation. Works on both Unix (brew)
 // and Windows (winget).
-func runPackageMenu(bundleName string) error {
-	tui.ClearScreen()
-
-	var categoryLabel string
-	for _, cat := range bundleCategories {
-		if cat.ID == bundleName {
-			categoryLabel = cat.Label
-			break
-		}
-	}
-	tui.RenderHeader("Bluefin CLI", "Install Apps > "+categoryLabel)
-
-	fmt.Println(tui.InfoStyle.Render("Loading packages..."))
-	pkgs, err := install.GetBundlePackages(bundleName)
-	if err != nil {
-		return fmt.Errorf("could not load bundle: %w", err)
-	}
-
-	pkgs = install.MarkInstalled(pkgs)
-
-	// Pre-populate selection with currently installed packages
-	preSelected := make([]string, 0)
-	for _, p := range pkgs {
-		if p.Installed {
-			preSelected = append(preSelected, p.ID)
-		}
-	}
-
-	opts := make([]huh.Option[string], 0, len(pkgs))
-	for _, p := range pkgs {
-		opts = append(opts, huh.NewOption(p.Name, p.ID))
-	}
-
-	selected := make([]string, len(preSelected))
-	copy(selected, preSelected)
-
-	tui.ClearScreen()
-	tui.RenderHeader("Bluefin CLI", "Install Apps > "+categoryLabel)
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewMultiSelect[string]().
-				Title("Select packages").
-				Description("Pre-checked = already installed. Space toggles, enter confirms.").
-				Options(opts...).
-				Value(&selected),
-		),
-	).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
-
-	if err := form.Run(); err != nil {
-		return err
-	}
-
-	// Diff: what changed vs pre-installed state
-	preSet := make(map[string]bool, len(preSelected))
-	for _, id := range preSelected {
-		preSet[id] = true
-	}
-	newSet := make(map[string]bool, len(selected))
-	for _, id := range selected {
-		newSet[id] = true
-	}
-
-	var toInstall, toRemove []install.Package
-	for _, p := range pkgs {
-		wasInstalled := preSet[p.ID]
-		isSelected := newSet[p.ID]
-		switch {
-		case isSelected && !wasInstalled:
-			toInstall = append(toInstall, p)
-		case !isSelected && wasInstalled:
-			toRemove = append(toRemove, p)
-		}
-	}
-
-	if len(toInstall) == 0 && len(toRemove) == 0 {
-		fmt.Println(tui.InfoStyle.Render("No changes selected."))
-		tui.Pause()
-		return nil
-	}
-
-	// Confirmation
-	tui.ClearScreen()
-	tui.RenderHeader("Bluefin CLI", "Install Apps > "+categoryLabel+" > Confirm")
-
-	if len(toInstall) > 0 {
-		fmt.Println(tui.SuccessStyle.Render("Will install:"))
-		for _, p := range toInstall {
-			fmt.Printf("  + %s\n", p.Name)
-		}
-	}
-	if len(toRemove) > 0 {
-		fmt.Println(tui.ErrorStyle.Render("Will uninstall:"))
-		for _, p := range toRemove {
-			fmt.Printf("  - %s\n", p.Name)
-		}
-	}
-	fmt.Println()
-
-	var confirmed bool
-	confirm := huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().
-				Title("Apply these changes?").
-				Value(&confirmed),
-		),
-	).WithTheme(tui.AppTheme).WithKeyMap(tui.ConfirmKeyMap())
-
-	if err := confirm.Run(); err != nil || !confirmed {
-		return nil
-	}
-
-	// Execute
-	tui.ClearScreen()
-	tui.RenderHeader("Bluefin CLI", "Install Apps > "+categoryLabel+" > Installing")
-
-	applyPackageChanges(toInstall, toRemove)
-
-	fmt.Println()
-	fmt.Println(tui.SuccessStyle.Render("✓ Done!"))
-	tui.Pause()
-	return nil
-}
-
 // applyPackageChanges installs and removes packages with the platform's
 // package manager, printing errors as it goes (used by both the legacy
 // flow and the native menu flow via the legacy bridge).
@@ -318,54 +153,4 @@ func applyPackageChanges(toInstall, toRemove []install.Package) {
 		}
 	}
 
-}
-
-func runWallpapersMenu() error {
-	tui.ClearScreen()
-	tui.RenderHeader("Bluefin CLI", "Main Menu > Wallpapers")
-	casks, err := install.GetWallpaperCasks()
-	if err != nil {
-		return fmt.Errorf("failed to discover wallpaper casks: %w", err)
-	}
-	if len(casks) == 0 {
-		return fmt.Errorf("no wallpaper casks found in ublue-os/tap")
-	}
-
-	opts := make([]huh.Option[string], 0, len(casks))
-	for _, c := range casks {
-		opts = append(opts, huh.NewOption(c, c))
-	}
-
-	var selected []string
-	wallpaperSelect := huh.NewMultiSelect[string]().
-		Title("Select wallpapers to install").
-		Description("Space toggles selections. Enter confirms. If none selected, Enter installs the highlighted item.").
-		Options(opts...).
-		Value(&selected)
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			wallpaperSelect,
-		),
-	).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
-	if err := form.Run(); err != nil {
-		if err == huh.ErrUserAborted {
-			return nil
-		}
-		return fmt.Errorf("form error: %w", err)
-	}
-
-	if len(selected) == 0 {
-		hovered, ok := wallpaperSelect.Hovered()
-		if !ok || strings.TrimSpace(hovered) == "" {
-			return fmt.Errorf("no wallpapers selected")
-		}
-		selected = []string{hovered}
-	}
-
-	if err := install.InstallWallpaperCasks(selected); err != nil {
-		return err
-	}
-
-	return maybeHandleWindowsThemePostInstall(nil, selected)
 }
