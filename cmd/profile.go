@@ -2,8 +2,15 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/tuna-os/bluefin-cli/internal/config"
 	"github.com/tuna-os/bluefin-cli/internal/profile"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
 )
@@ -59,7 +66,130 @@ var profileImportCmd = &cobra.Command{
 }
 
 func init() {
+	profileDiffCmd.Flags().Bool("exit-code", false, "Exit non-zero when drift exists (for scripts)")
 	profileCmd.AddCommand(profileExportCmd)
 	profileCmd.AddCommand(profileImportCmd)
+	profileCmd.AddCommand(profileDiffCmd)
+	profileCmd.AddCommand(profilePushCmd)
+	profileCmd.AddCommand(profilePullCmd)
 	rootCmd.AddCommand(profileCmd)
+}
+
+var profileDiffCmd = &cobra.Command{
+	Use:   "diff <file>",
+	Short: "Show what import would change (drift from a saved profile)",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		want, err := profile.Load(args[0])
+		if err != nil {
+			return err
+		}
+		current, err := profile.Export(currentShellName())
+		if err != nil {
+			return err
+		}
+		changes := profile.Diff(current, want)
+		if len(changes) == 0 {
+			fmt.Println(tui.SuccessStyle.Render("✓ No drift — this machine matches the profile."))
+			return nil
+		}
+		fmt.Println("Import would change:")
+		for _, c := range changes {
+			fmt.Printf("  %s\n", c)
+		}
+		if exitCode, _ := cmd.Flags().GetBool("exit-code"); exitCode {
+			return fmt.Errorf("%d difference(s)", len(changes))
+		}
+		return nil
+	},
+}
+
+// profileGistFile is the filename used inside the sync gist.
+const profileGistFile = "bluefin-profile.json"
+
+var profilePushCmd = &cobra.Command{
+	Use:   "push",
+	Short: "Sync this machine's profile to a private GitHub gist (via gh)",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if _, err := exec.LookPath("gh"); err != nil {
+			return fmt.Errorf("profile sync uses the GitHub CLI — install gh and run 'gh auth login'")
+		}
+		p, err := profile.Export(currentShellName())
+		if err != nil {
+			return err
+		}
+		tmp := filepath.Join(os.TempDir(), fmt.Sprintf("bluefin-profile-%d.json", os.Getpid()))
+		if err := p.Save(tmp); err != nil {
+			return err
+		}
+		defer func() { _ = os.Remove(tmp) }()
+
+		if id := viper.GetString("profile.gist_id"); id != "" {
+			out, err := exec.Command("gh", "gist", "edit", id, "--filename", profileGistFile, tmp).CombinedOutput()
+			if err != nil {
+				return fmt.Errorf("updating gist %s: %v\n%s", id, err, out)
+			}
+			fmt.Println(tui.SuccessStyle.Render("✓ Profile pushed to gist " + id))
+			return nil
+		}
+
+		named := filepath.Join(os.TempDir(), profileGistFile)
+		if err := p.Save(named); err != nil {
+			return err
+		}
+		defer func() { _ = os.Remove(named) }()
+		out, err := exec.Command("gh", "gist", "create", "--desc", "bluefin-cli profile", named).CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("creating gist: %v\n%s", err, out)
+		}
+		url := strings.TrimSpace(string(out))
+		id := path.Base(url)
+		viper.Set("profile.gist_id", id)
+		if err := config.Save(); err != nil {
+			return err
+		}
+		fmt.Println(tui.SuccessStyle.Render("✓ Profile pushed to new private gist " + id + " (saved in config)"))
+		return nil
+	},
+}
+
+var profilePullCmd = &cobra.Command{
+	Use:   "pull [gist-id]",
+	Short: "Fetch and apply the synced profile from its gist",
+	Args:  cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if _, err := exec.LookPath("gh"); err != nil {
+			return fmt.Errorf("profile sync uses the GitHub CLI — install gh and run 'gh auth login'")
+		}
+		id := viper.GetString("profile.gist_id")
+		if len(args) > 0 {
+			id = args[0]
+		}
+		if id == "" {
+			return fmt.Errorf("no gist configured — run 'profile push' first or pass a gist id")
+		}
+		out, err := exec.Command("gh", "gist", "view", id, "--filename", profileGistFile, "--raw").Output()
+		if err != nil {
+			return fmt.Errorf("fetching gist %s: %w", id, err)
+		}
+		tmp := filepath.Join(os.TempDir(), fmt.Sprintf("bluefin-profile-pull-%d.json", os.Getpid()))
+		if err := os.WriteFile(tmp, out, 0o600); err != nil {
+			return err
+		}
+		defer func() { _ = os.Remove(tmp) }()
+
+		p, err := profile.Load(tmp)
+		if err != nil {
+			return err
+		}
+		if err := p.Apply(); err != nil {
+			return err
+		}
+		if len(args) > 0 && viper.GetString("profile.gist_id") == "" {
+			viper.Set("profile.gist_id", id)
+			_ = config.Save()
+		}
+		fmt.Println(tui.SuccessStyle.Render("✓ Profile pulled and applied."))
+		return nil
+	},
 }

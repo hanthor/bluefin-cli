@@ -1,16 +1,19 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/tuna-os/bluefin-cli/internal/shell"
+	"github.com/tuna-os/bluefin-cli/internal/tui"
 	"github.com/tuna-os/bluefin-cli/internal/tui/theme"
 	"github.com/tuna-os/bluefin-cli/internal/update"
 
@@ -21,6 +24,12 @@ var doctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "Diagnose common problems with your Bluefin CLI setup",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if bench, _ := cmd.Flags().GetBool("bench"); bench {
+			return runBench()
+		}
+		if fix, _ := cmd.Flags().GetBool("fix"); fix {
+			runDoctorFixes()
+		}
 		report, failures := doctorReport()
 		fmt.Println(report)
 		if failures > 0 {
@@ -30,7 +39,91 @@ var doctorCmd = &cobra.Command{
 	},
 }
 
+// runDoctorFixes applies the remediations that are safe to automate:
+// enabling shell integration and installing missing managed tools. The
+// report afterwards shows what remains.
+func runDoctorFixes() {
+	current := currentShellName()
+	if !shell.CheckStatus()[current] {
+		fmt.Println("fix: enabling shell integration for " + current)
+		if err := shell.Toggle(current, true); err != nil {
+			fmt.Println("  failed: " + err.Error())
+		}
+	}
+	if _, err := exec.LookPath("brew"); err == nil {
+		for _, tool := range []string{"eza", "fzf", "starship"} {
+			if _, err := exec.LookPath(tool); err != nil {
+				fmt.Println("fix: installing " + tool)
+				if out, err := exec.Command("brew", "install", tool).CombinedOutput(); err != nil {
+					fmt.Printf("  failed: %v\n%s", err, out)
+				}
+			}
+		}
+	}
+}
+
+// runBench measures interactive shell startup with the current rc files
+// against a bare --norc baseline, so the cost of the shell experience is a
+// number instead of a feeling.
+func runBench() error {
+	sh := currentShellName()
+	var withRC, bare []string
+	switch sh {
+	case "bash":
+		withRC, bare = []string{"-i", "-c", "exit"}, []string{"--norc", "--noprofile", "-i", "-c", "exit"}
+	case "zsh":
+		withRC, bare = []string{"-i", "-c", "exit"}, []string{"-f", "-i", "-c", "exit"}
+	case "fish":
+		withRC, bare = []string{"-i", "-c", "exit"}, []string{"--no-config", "-i", "-c", "exit"}
+	default:
+		return fmt.Errorf("bench supports bash, zsh, and fish (current: %s)", sh)
+	}
+	if _, err := exec.LookPath(sh); err != nil {
+		return fmt.Errorf("%s not found on PATH", sh)
+	}
+
+	median := func(args []string) (time.Duration, error) {
+		const runs = 7
+		times := make([]time.Duration, 0, runs)
+		for i := 0; i < runs; i++ {
+			start := time.Now()
+			err := exec.Command(sh, args...).Run()
+			var exitErr *exec.ExitError
+			if err != nil && !errors.As(err, &exitErr) {
+				// A non-zero exit is fine (interactive shells without a TTY
+				// often grumble); failing to start is not.
+				return 0, err
+			}
+			times = append(times, time.Since(start))
+		}
+		sort.Slice(times, func(a, b int) bool { return times[a] < times[b] })
+		return times[len(times)/2], nil
+	}
+
+	fmt.Printf("Benchmarking %s startup (median of 7 runs)...\n", sh)
+	full, err := median(withRC)
+	if err != nil {
+		return fmt.Errorf("running %s: %w", sh, err)
+	}
+	base, err := median(bare)
+	if err != nil {
+		return fmt.Errorf("running bare %s: %w", sh, err)
+	}
+	overhead := full - base
+	fmt.Printf("  your config:  %s\n", full.Round(time.Millisecond))
+	fmt.Printf("  bare shell:   %s\n", base.Round(time.Millisecond))
+	fmt.Printf("  rc overhead:  %s\n", overhead.Round(time.Millisecond))
+	if overhead > 300*time.Millisecond {
+		fmt.Println(tui.WarningStyle.Render("  Startup overhead is noticeable — try disabling components in the Shell menu."))
+	} else {
+		fmt.Println(tui.SuccessStyle.Render("  Snappy."))
+	}
+	return nil
+}
+
 func init() {
+	doctorCmd.Flags().Bool("fix", false, "Apply safe automatic fixes before reporting")
+	doctorCmd.Flags().Bool("bench", false, "Benchmark interactive shell startup vs a bare shell")
 	rootCmd.AddCommand(doctorCmd)
 }
 

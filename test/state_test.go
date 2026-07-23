@@ -215,3 +215,32 @@ func TestProfileRoundTripRestoresState(t *testing.T) {
 	mustRun("shell", "bash", "off")
 	mustRun("theme", "auto")
 }
+
+// TestDoctorFixReachesState: --fix must actually enable shell integration,
+// and the subsequent report must agree.
+func TestDoctorFixReachesState(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix shells only")
+	}
+	rc := filepath.Join(os.Getenv("HOME"), ".bashrc")
+	if err := os.WriteFile(rc, []byte("# base\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// doctor exit code is nonzero when hard failures remain (e.g. no
+	// network in a sandbox), so assert on state, not on the exit code.
+	cmd := commandWithEnv(t, []string{"SHELL=/bin/bash"}, "doctor", "--fix")
+	out, _ := cmd.CombinedOutput()
+
+	if !fileContains(t, rc, "bluefin-cli init") {
+		t.Errorf("doctor --fix did not enable shell integration:\n%s", out)
+	}
+	if !strings.Contains(string(out), "Shell integration enabled (bash)") {
+		t.Errorf("doctor report disagrees with the fix it just applied:\n%s", out)
+	}
+
+	// Tidy the sandbox.
+	if _, err := runCommand(t, "shell", "bash", "off"); err != nil {
+		t.Fatalf("cleanup failed: %v", err)
+	}
+}

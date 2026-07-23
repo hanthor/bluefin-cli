@@ -117,3 +117,46 @@ func (p *Profile) Apply() error {
 	}
 	return nil
 }
+
+// Diff reports the changes Apply would make to reach want from current —
+// empty means no drift.
+func Diff(current, want *Profile) []string {
+	var out []string
+
+	if want.Flavor != "" && want.Flavor != current.Flavor {
+		out = append(out, fmt.Sprintf("flavor: %s -> %s", current.Flavor, want.Flavor))
+	}
+
+	names := make([]string, 0, len(want.Tools))
+	for name := range want.Tools {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if current.Tools[name] != want.Tools[name] {
+			state := "off -> on"
+			if !want.Tools[name] {
+				state = "on -> off"
+			}
+			out = append(out, fmt.Sprintf("tool %s: %s", name, state))
+		}
+	}
+
+	cur := map[string]bool{}
+	for _, sh := range current.EnabledShells {
+		cur[sh] = true
+	}
+	wanted := map[string]bool{}
+	for _, sh := range want.EnabledShells {
+		wanted[sh] = true
+		if !cur[sh] {
+			out = append(out, fmt.Sprintf("shell %s: disabled -> enabled", sh))
+		}
+	}
+	for _, sh := range unixShells {
+		if cur[sh] && !wanted[sh] {
+			out = append(out, fmt.Sprintf("shell %s: enabled -> disabled", sh))
+		}
+	}
+	return out
+}
