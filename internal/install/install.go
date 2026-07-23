@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -67,6 +68,48 @@ func Bundle(nameOrPath string) error {
 	return GetInstaller().InstallBundle(nameOrPath)
 }
 
+// customBundleDir is where user-defined bundles live.
+func customBundleDir() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".config", "bluefin-cli", "bundles"), nil
+}
+
+// CustomBundlePath resolves a user-defined bundle name to its Brewfile.
+func CustomBundlePath(name string) (string, error) {
+	dir, err := customBundleDir()
+	if err != nil {
+		return "", err
+	}
+	p := filepath.Join(dir, name+".Brewfile")
+	if _, err := os.Stat(p); err != nil {
+		return "", err
+	}
+	return p, nil
+}
+
+// CustomBundles lists the user-defined bundle names.
+func CustomBundles() []string {
+	dir, err := customBundleDir()
+	if err != nil {
+		return nil
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, e := range entries {
+		if strings.HasSuffix(e.Name(), ".Brewfile") {
+			out = append(out, strings.TrimSuffix(e.Name(), ".Brewfile"))
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
 func GetBrewfile(nameOrPath string) (string, func(), error) {
 	if strings.Contains(nameOrPath, "/") || strings.Contains(nameOrPath, "\\") {
 		if _, err := os.Stat(nameOrPath); os.IsNotExist(err) {
@@ -75,9 +118,19 @@ func GetBrewfile(nameOrPath string) (string, func(), error) {
 		return nameOrPath, func() {}, nil
 	}
 
+	// User-defined bundles: ~/.config/bluefin-cli/bundles/<name>.Brewfile
+	// shadow nothing and extend the curated set.
+	if p, err := CustomBundlePath(nameOrPath); err == nil {
+		return p, func() {}, nil
+	}
+
 	bundle, ok := bundles[nameOrPath]
 	if !ok {
-		return "", func() {}, fmt.Errorf("unknown bundle: %s (available: ai, cli, cncf, experimental-ide, fonts, full-desktop, ide, k8s, all)", nameOrPath)
+		names := "ai, cli, cncf, experimental-ide, fonts, full-desktop, ide, k8s, all"
+		if custom := CustomBundles(); len(custom) > 0 {
+			names += ", " + strings.Join(custom, ", ")
+		}
+		return "", func() {}, fmt.Errorf("unknown bundle: %s (available: %s)", nameOrPath, names)
 	}
 
 	if nameOrPath == "full-desktop" {

@@ -244,3 +244,39 @@ func TestDoctorFixReachesState(t *testing.T) {
 		t.Fatalf("cleanup failed: %v", err)
 	}
 }
+
+// TestCustomBundleInstall: a user Brewfile in the config dir becomes an
+// installable bundle whose packages actually reach brew.
+func TestCustomBundleInstall(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("brew path is unix-only")
+	}
+	home := os.Getenv("HOME")
+	dir := filepath.Join(home, ".config", "bluefin-cli", "bundles")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "mystuff.Brewfile"), []byte("brew \"cowsay\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+
+	fakeBin := t.TempDir()
+	log := filepath.Join(fakeBin, "brew.log")
+	stub := fmt.Sprintf("#!/bin/sh\necho \"$@\" >> %[1]s\nfor a in \"$@\"; do case \"$a\" in --file=*) cat \"${a#--file=}\" >> %[1]s ;; esac; done\nexit 0\n", log)
+	if err := os.WriteFile(filepath.Join(fakeBin, "brew"), []byte(stub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := commandWithEnv(t, []string{
+		"PATH=" + fakeBin + string(os.PathListSeparator) + os.Getenv("PATH"),
+	}, "install", "mystuff")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("install mystuff failed: %v\n%s", err, out)
+	}
+	logged, _ := os.ReadFile(log)
+	if !strings.Contains(string(logged), `brew "cowsay"`) {
+		t.Errorf("custom bundle content never reached brew:\n%s", logged)
+	}
+}

@@ -244,9 +244,54 @@ func bundlesMenuScreen() app.Screen {
 		}
 		return out
 	}
-	return app.NewMenu("Install Apps", nil, items, func(it app.MenuItem) tea.Cmd {
+	withCustom := func() []app.MenuItem {
+		out := items()
+		for _, name := range install.CustomBundles() {
+			path, err := install.CustomBundlePath(name)
+			if err != nil {
+				continue
+			}
+			out = append(out, app.MenuItem{Icon: "🧰", Label: name, Value: "file:" + path,
+				Desc: "Your bundle (~/.config/bluefin-cli/bundles)", Submenu: true})
+		}
+		// The `brew bundle` convention: a Brewfile in the home directory
+		// becomes a managed package set too.
+		home, _ := os.UserHomeDir()
+		for _, bf := range []string{"Brewfile", ".Brewfile"} {
+			p := filepath.Join(home, bf)
+			if _, err := os.Stat(p); err == nil {
+				out = append(out, app.MenuItem{Icon: "🏠", Label: "~/" + bf, Value: "file:" + p,
+					Desc: "Your home Brewfile — manage its packages", Submenu: true})
+			}
+		}
+		return out
+	}
+	return app.NewMenu("Install Apps", nil, withCustom, func(it app.MenuItem) tea.Cmd {
+		if path, ok := strings.CutPrefix(it.Value, "file:"); ok {
+			return brewfileFlow(path, it.Label)
+		}
 		return packagesFlow(it.Value, it.Label)
 	})
+}
+
+// brewfileFlow opens any on-disk Brewfile as a managed multiselect —
+// installed packages pre-checked, uncheck to uninstall, same diff+confirm
+// flow as the curated bundles.
+func brewfileFlow(path, label string) tea.Cmd {
+	return tea.Batch(
+		app.Toast("Reading "+label+"…", false),
+		func() tea.Msg {
+			pkgs, err := install.GetBrewfilePackages(path)
+			if err != nil {
+				return app.ToastMsg{Text: "Error: " + err.Error(), IsErr: true}
+			}
+			if len(pkgs) == 0 {
+				return app.ToastMsg{Text: label + " has no brew/cask entries.", IsErr: true}
+			}
+			pkgs = install.MarkInstalled(pkgs)
+			return app.PushMsg{Screen: packagesFormScreen(label, pkgs)}
+		},
+	)
 }
 
 // packagesFlow loads a bundle in the background (the menu stays live), then

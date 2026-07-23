@@ -16,6 +16,7 @@ A powerful, modern CLI tool for managing shell configuration and development env
 - **🩺 Doctor**: `bluefin-cli doctor` diagnoses setup problems with fix hints
 - **🎨 Theme Flavors**: `bluefin-cli theme <flavor>` pins a Catppuccin flavor (latte, frappe, macchiato, mocha) or follows your terminal with `auto`
 - **⬆ Self-Update**: `bluefin-cli update` for script installs — sha256-verified against the release checksums; package-manager installs are pointed at the right upgrade command
+- **🏠 Your Brewfiles**: a `~/Brewfile` (or `~/.Brewfile`) shows up in Install Apps as a managed package set — installed state pre-checked, uncheck to uninstall; drop extra recipes in `~/.config/bluefin-cli/bundles/*.Brewfile` and they appear alongside the curated bundles
 - **📦 Profiles**: `bluefin-cli profile export > setup.json` on one machine, `profile import setup.json` on another — shells, tools, and theme replayed exactly
 - **🦕 A fully native TUI**: persistent shell with breadcrumbs, fuzzy filtering (`/`), a `ctrl+p` command palette, and a dot-matrix dino running the header — plus a hidden surprise for those who find it
 

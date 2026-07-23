@@ -28,6 +28,16 @@ func GetBundlePackages(bundleName string) ([]Package, error) {
 	return getUnixBundlePackages(bundleName)
 }
 
+// GetBrewfilePackages parses any Brewfile on disk into packages (brew and
+// cask lines), for user Brewfiles and custom bundles.
+func GetBrewfilePackages(path string) ([]Package, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", path, err)
+	}
+	return parseBrewfileBytes(data), nil
+}
+
 func getUnixBundlePackages(bundleName string) ([]Package, error) {
 	bundle, ok := bundles[bundleName]
 	if !ok {
