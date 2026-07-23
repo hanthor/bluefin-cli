@@ -19,25 +19,26 @@ This page maps the current flows and how they are tested.
 
 ## Menu tree
 
-Items marked *(legacy)* run outside the shell (terminal is handed over, then
+All flows render natively inside the shell. (Historical note: items once
 the shell resumes) — they are candidates for native-screen migration.
 
 ```mermaid
 graph TD
     Home[Home] --> Status["📊 Status (native scrollable view)"]
+    Home --> Doctor["🩺 Doctor (native diagnostics)"]
     Home --> Shell[🐚 Bluefin Shell]
     Home --> Install[📦 Install Apps]
-    Home --> Wallpapers["🖼 Wallpapers (legacy multiselect)"]
-    Home --> Fonts["🔤 Fonts (legacy)"]
-    Home --> Starship["🚀 Starship Theme (legacy select)"]
+    Home --> Wallpapers["🖼 Wallpapers (native multiselect)"]
+    Home --> Fonts["🔤 Fonts (native multiselect)"]
+    Home --> Starship["🚀 Starship Theme (native select)"]
     Home --> Sunset["🌇 Sunset Switching (plus build, WSL/Windows only)"]
     Home --> Exit[👋 Exit]
 
     Shell --> Toggle["🔄 Toggle current shell (auto-detected)"]
     Shell --> Components["🔧 Configure Components (native multiselect)"]
-    Shell --> MOTD["📰 MOTD Settings (legacy)"]
-    Shell --> Shells["🐚 Other Shells (legacy multiselect)"]
-    Shell --> Advanced["🎨 Advanced (legacy)"]
+    Shell --> MOTD["📰 MOTD Settings (native menu)"]
+    Shell --> Shells["🐚 Other Shells (native multiselect)"]
+    Shell --> Advanced["🎨 Advanced (native: dark mode, flavor)"]
 
     Install --> AI["🤖 AI Tools"]
     Install --> CLI["💻 CLI Essentials"]
@@ -47,7 +48,7 @@ graph TD
     Install --> K8s["🎡 Kubernetes Tools"]
     Install --> Gnome["🐧 Full GNOME Desktop (Linux+GNOME only)"]
 
-    AI --> Pkg["Per-category package multiselect (legacy):\ninstalled pre-checked, diff → confirm → apply"]
+    AI --> Pkg["Per-category package multiselect (native):\ninstalled pre-checked, diff → confirm → runner"]
 ```
 
 The `ctrl+p` palette lists every leaf destination above (Status, each install
@@ -70,10 +71,12 @@ Three layers, run by CI and `just` recipes:
 
 ## Native screens & extras
 
-- **Status** and **Configure Components** now render natively inside the
-  shell (`app.TextScreen` / `app.FormScreen`) — the header, dino, and theme
-  stay on screen. Remaining *(legacy)* leaves are migration candidates using
-  the same two wrappers.
+- Every flow renders natively inside the shell: selection UIs are
+  `app.FormScreen`, read-only views are `app.TextScreen`, and printing tasks
+  (brew installs, MOTD, doctor) run in `app.RunnerScreen`, which captures
+  their stdout into a scrolling log with a spinner and elapsed time. The only
+  terminal handover left is the WSL→Windows sunset delegation
+  (`app.RunExternal`), which launches another interactive program.
 - `bluefin-cli doctor` — environment diagnostics with fix hints.
 - `bluefin-cli theme <flavor>` — pin a Catppuccin flavor (latte, frappe,
   macchiato, mocha) or `auto` to follow the terminal background.

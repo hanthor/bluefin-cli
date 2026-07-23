@@ -11,7 +11,7 @@ var dinoCmd = &cobra.Command{
 	Short:  "🦕",
 	Hidden: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return app.Run(app.NewGame())
+		return app.Run(gameScreen())
 	},
 }
 

@@ -19,7 +19,8 @@ type GameScreen struct {
 	tick      int
 	score     int
 	best      int
-	air       int // remaining jump ticks (>0 means airborne)
+	saveBest  func(int) // persists a new high score; may be nil
+	air       int       // remaining jump ticks (>0 means airborne)
 	over      bool
 	width     int
 }
@@ -38,8 +39,11 @@ const (
 // jumpArc is the dino's row offset above the ground per airborne tick.
 var jumpArc = []int{1, 2, 3, 3, 3, 3, 2, 1, 0}
 
-// NewGame creates the runner screen.
-func NewGame() *GameScreen { return &GameScreen{} }
+// NewGame creates the runner screen. best seeds the high score and saveBest
+// (optional) is called whenever a run beats it.
+func NewGame(best int, saveBest func(int)) *GameScreen {
+	return &GameScreen{best: best, saveBest: saveBest}
+}
 
 func (g *GameScreen) Title() string { return "Dino Run" }
 
@@ -125,7 +129,12 @@ func (g *GameScreen) advanceGame() {
 		for _, x := range g.obstacles {
 			if x >= gameDinoX+1 && x <= gameDinoX+gameSpriteW-2 {
 				g.over = true
-				g.best = max(g.best, g.score)
+				if g.score > g.best {
+					g.best = g.score
+					if g.saveBest != nil {
+						g.saveBest(g.best)
+					}
+				}
 			}
 		}
 	}

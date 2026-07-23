@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"unicode"
@@ -65,7 +66,15 @@ func (s *MenuScreen) visible() []int {
 	type scored struct{ idx, score int }
 	matches := make([]scored, 0, len(s.items))
 	for i, it := range s.items {
-		if sc, ok := fuzzyScore(strings.ToLower(it.Label), strings.ToLower(s.query)); ok {
+		hay := strings.ToLower(it.Label)
+		sc, ok := fuzzyScore(hay, strings.ToLower(s.query))
+		if !ok && it.Desc != "" {
+			// Fall back to matching the description, ranked below any
+			// label match.
+			sc, ok = fuzzyScore(strings.ToLower(it.Desc), strings.ToLower(s.query))
+			sc -= 1000
+		}
+		if ok {
 			matches = append(matches, scored{i, sc})
 		}
 	}
@@ -165,6 +174,10 @@ func (s *MenuScreen) View(width, height int) string {
 		prompt := lipgloss.NewStyle().Foreground(t.Accent).Bold(true).Render(" 🔎 ") + s.query
 		if s.filtering {
 			prompt += lipgloss.NewStyle().Foreground(t.Accent).Render("▏")
+		}
+		if s.query != "" {
+			prompt += lipgloss.NewStyle().Foreground(t.TextFaint).
+				Render(fmt.Sprintf("   %d/%d", len(s.visible()), len(s.items)))
 		}
 		b.WriteString(prompt + "\n\n")
 	} else {

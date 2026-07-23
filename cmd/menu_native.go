@@ -282,3 +282,23 @@ func advancedMenuScreen() app.Screen {
 		return nil
 	})
 }
+
+// --- Doctor & game wiring ----------------------------------------------
+
+// doctorScreenCmd runs the doctor checks in a RunnerScreen (they hit the
+// network, so they must not block the render loop).
+func doctorScreenCmd() tea.Cmd {
+	return app.Push(app.NewRunner("Doctor", func() error {
+		report, _ := doctorReport()
+		fmt.Println(report)
+		return nil
+	}))
+}
+
+// gameScreen builds the dino runner with a config-persisted high score.
+func gameScreen() app.Screen {
+	return app.NewGame(viper.GetInt("game.high_score"), func(n int) {
+		viper.Set("game.high_score", n)
+		_ = config.Save()
+	})
+}

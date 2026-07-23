@@ -13,6 +13,10 @@ A powerful, modern CLI tool for managing shell configuration and development env
 - **�️ Wallpapers**: Install desktop wallpaper collections from ublue-os/tap
 - **🎨 Starship Themes**: Browse and apply Starship prompt themes
 - **📊 Status Command**: View configuration and installed tools at a glance
+- **🩺 Doctor**: `bluefin-cli doctor` diagnoses setup problems with fix hints
+- **🎨 Theme Flavors**: `bluefin-cli theme <flavor>` pins a Catppuccin flavor (latte, frappe, macchiato, mocha) or follows your terminal with `auto`
+- **⬆ Self-Update**: `bluefin-cli update` for script installs — sha256-verified against the release checksums; package-manager installs are pointed at the right upgrade command
+- **🦕 A fully native TUI**: persistent shell with breadcrumbs, fuzzy filtering (`/`), a `ctrl+p` command palette, and a dot-matrix dino running the header — plus a hidden surprise for those who find it
 
 ## 🚀 Installation
 
@@ -99,6 +103,19 @@ View your current configuration and installed tools:
 
 ```bash
 bluefin-cli status
+```
+
+#### Diagnose Problems
+
+```bash
+bluefin-cli doctor
+```
+
+#### Update
+
+```bash
+bluefin-cli update          # self-update (script installs)
+bluefin-cli update --check  # just check
 ```
 
 ## ✨ Shell Experience

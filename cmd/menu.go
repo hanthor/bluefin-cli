@@ -69,6 +69,7 @@ func mainMenuItems() []app.MenuItem {
 
 	items := []app.MenuItem{
 		{Icon: "📊", Label: "Status", Value: "status", Desc: "Environment health at a glance"},
+		{Icon: "🩺", Label: "Doctor", Value: "doctor", Desc: "Diagnose setup problems with fix hints"},
 		{Icon: "🐚", Label: "Bluefin Shell", Value: "shell", Desc: "Aliases, prompt, and modern CLI tools", Hint: shellHint, Submenu: true},
 		{Icon: "📦", Label: "Install Apps", Value: "bundles", Desc: "Curated tool bundles", Submenu: true},
 	}
@@ -81,6 +82,8 @@ func mainMenuSelect(it app.MenuItem) tea.Cmd {
 	switch it.Value {
 	case "status":
 		return app.Push(app.NewText("Status", status.Render))
+	case "doctor":
+		return doctorScreenCmd()
 	case "shell":
 		return app.Push(shellMenuScreen())
 	case "bundles":
@@ -330,7 +333,11 @@ func registerPaletteActions() {
 		})
 		app.Register(app.Action{
 			ID: "dino", Icon: "🦕", Label: "Dino Run", Section: "Fun",
-			Do: func() tea.Cmd { return app.Push(app.NewGame()) },
+			Do: func() tea.Cmd { return app.Push(gameScreen()) },
+		})
+		app.Register(app.Action{
+			ID: "doctor", Icon: "🩺", Label: "Doctor", Section: "Home",
+			Do: func() tea.Cmd { return doctorScreenCmd() },
 		})
 		for _, cat := range availableBundleCategories() {
 			id, label := cat.ID, cat.Label

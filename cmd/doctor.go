@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -18,7 +19,12 @@ var doctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "Diagnose common problems with your Bluefin CLI setup",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDoctor()
+		report, failures := doctorReport()
+		fmt.Println(report)
+		if failures > 0 {
+			return fmt.Errorf("%d check(s) failed", failures)
+		}
+		return nil
 	},
 }
 
@@ -33,7 +39,9 @@ type checkResult struct {
 	note string // failure detail or fix hint
 }
 
-func runDoctor() error {
+// doctorReport runs all checks and renders the results; failures counts
+// hard failures (warnings excluded).
+func doctorReport() (string, int) {
 	t := theme.DefaultTheme
 	pass := lipgloss.NewStyle().Foreground(t.Success).Render("✓")
 	warn := lipgloss.NewStyle().Foreground(t.Warning).Render("!")
@@ -48,8 +56,9 @@ func runDoctor() error {
 		checkVersion(),
 	}
 
-	fmt.Println()
+	var b strings.Builder
 	failures := 0
+	b.WriteString("\n")
 	for _, c := range checks {
 		mark := pass
 		switch {
@@ -59,17 +68,15 @@ func runDoctor() error {
 			mark = fail
 			failures++
 		}
-		fmt.Printf("  %s %s\n", mark, c.name)
+		fmt.Fprintf(&b, "  %s %s\n", mark, c.name)
 		if c.note != "" {
-			fmt.Printf("    %s\n", dim.Render(c.note))
+			fmt.Fprintf(&b, "    %s\n", dim.Render(c.note))
 		}
 	}
-	fmt.Println()
-	if failures > 0 {
-		return fmt.Errorf("%d check(s) failed", failures)
+	if failures == 0 {
+		b.WriteString("\n" + dim.Render("  All checks passed."))
 	}
-	fmt.Println(dim.Render("  All checks passed."))
-	return nil
+	return b.String(), failures
 }
 
 func checkBrew() checkResult {

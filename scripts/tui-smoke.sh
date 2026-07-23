@@ -37,7 +37,7 @@ assert "menu items present"       "Install Apps"
 assert "footer hints present"     "filter"
 assert "dino is on screen"        "⣯"
 
-keys j; keys j; keys Enter; sleep 0.5; cap
+keys j; keys j; keys j; keys Enter; sleep 0.5; cap
 assert "drill-down breadcrumb"    "› Install Apps"
 assert "categories listed"        "CLI Essentials"
 assert "back hint appears"        "back"
@@ -52,7 +52,11 @@ assert "filter matches fuzzily"   "Starship"
 keys Escape; sleep 0.3; keys C-p; cap
 assert "palette opens"            "› Palette"
 
-keys Escape; sleep 0.3; keys Escape; sleep 0.3
+keys d i n o; sleep 0.3; keys Enter; sleep 1; cap
+assert "dino game opens"          "score "
+keys Escape; sleep 0.4; cap
+assert "game exits to home"       "› Home"
+
 keys "?"; cap
 assert "help overlay opens"       "Keys"
 

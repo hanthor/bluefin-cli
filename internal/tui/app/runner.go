@@ -2,8 +2,10 @@ package app
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -20,12 +22,15 @@ import (
 // to the real terminal, so frames still reach the screen while fmt.Print
 // output from the task lands in the log.
 type RunnerScreen struct {
-	title string
-	run   func() error
-	ch    chan runnerEvent
-	lines []string
-	done  bool
-	err   error
+	title   string
+	run     func() error
+	ch      chan runnerEvent
+	lines   []string
+	done    bool
+	err     error
+	started time.Time
+	elapsed time.Duration
+	spin    int
 }
 
 type runnerEvent struct {
@@ -38,6 +43,10 @@ type runnerMsg struct {
 	s  *RunnerScreen
 	ev runnerEvent
 }
+
+type runnerTickMsg struct{ s *RunnerScreen }
+
+var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 
 // maxRunnerLines bounds the log buffer.
 const maxRunnerLines = 500
@@ -54,8 +63,13 @@ func (s *RunnerScreen) CapturingInput() bool { return !s.done }
 
 func (s *RunnerScreen) Init() tea.Cmd {
 	s.ch = make(chan runnerEvent, 64)
+	s.started = time.Now()
 	go s.exec()
-	return s.wait()
+	return tea.Batch(s.wait(), s.tick())
+}
+
+func (s *RunnerScreen) tick() tea.Cmd {
+	return tea.Tick(time.Second/10, func(time.Time) tea.Msg { return runnerTickMsg{s: s} })
 }
 
 func (s *RunnerScreen) wait() tea.Cmd {
@@ -90,12 +104,21 @@ func (s *RunnerScreen) exec() {
 }
 
 func (s *RunnerScreen) Update(msg tea.Msg) (Screen, tea.Cmd) {
+	if t, ok := msg.(runnerTickMsg); ok && t.s == s {
+		if s.done {
+			return s, nil
+		}
+		s.spin++
+		s.elapsed = time.Since(s.started)
+		return s, s.tick()
+	}
 	m, ok := msg.(runnerMsg)
 	if !ok || m.s != s {
 		return s, nil
 	}
 	if m.ev.done {
 		s.done, s.err = true, m.ev.err
+		s.elapsed = time.Since(s.started)
 		return s, nil
 	}
 	s.lines = append(s.lines, m.ev.line)
@@ -117,14 +140,20 @@ func (s *RunnerScreen) View(width, height int) string {
 		out = append(out, " "+lipgloss.NewStyle().MaxWidth(max(width-2, 10)).Render(dim.Render(l)))
 	}
 
+	elapsed := ""
+	if s.elapsed >= time.Second {
+		elapsed = fmt.Sprintf("  %.0fs", s.elapsed.Seconds())
+	}
 	var status string
 	switch {
 	case !s.done:
-		status = lipgloss.NewStyle().Foreground(t.Info).Render(" ⏳ working…")
+		frame := spinnerFrames[s.spin%len(spinnerFrames)]
+		status = lipgloss.NewStyle().Foreground(t.Info).Render(" "+frame+" working…") + dim.Render(elapsed)
 	case s.err != nil:
-		status = lipgloss.NewStyle().Foreground(t.Error).Render(" ✗ " + s.err.Error())
+		status = lipgloss.NewStyle().Foreground(t.Error).Render(" ✗ "+s.err.Error()) + dim.Render(elapsed)
 	default:
-		status = lipgloss.NewStyle().Foreground(t.Success).Render(" ✓ done") + dim.Render("  —  esc to go back")
+		status = lipgloss.NewStyle().Foreground(t.Success).Render(" ✓ done") +
+			dim.Render(elapsed+"  —  esc to go back")
 	}
 	out = append(out, status)
 	return strings.Join(out, "\n")
