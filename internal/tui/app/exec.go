@@ -8,8 +8,8 @@ import (
 	"charm.land/huh/v2"
 )
 
-// LegacyDoneMsg reports the result of a legacy flow run via RunLegacy.
-type LegacyDoneMsg struct{ Err error }
+// ExternalDoneMsg reports the result of an external program run via RunExternal.
+type ExternalDoneMsg struct{ Err error }
 
 // execFn adapts a plain function to tea.ExecCommand so legacy flows (huh
 // forms with their own Run loop, brew/winget commands writing to stdout) can
@@ -23,13 +23,14 @@ func (e *execFn) SetStdin(io.Reader)  {}
 func (e *execFn) SetStdout(io.Writer) {}
 func (e *execFn) SetStderr(io.Writer) {}
 
-// RunLegacy releases the terminal, runs fn, and resumes the shell. A
+// RunExternal releases the terminal for a genuinely external interactive
+// program (e.g. the WSL->Windows CLI delegation), then resumes the shell. A
 // huh.ErrUserAborted from fn is treated as a normal "back" and swallowed.
-func RunLegacy(fn func() error) tea.Cmd {
+func RunExternal(fn func() error) tea.Cmd {
 	return tea.Exec(&execFn{fn: fn}, func(err error) tea.Msg {
 		if errors.Is(err, huh.ErrUserAborted) {
 			err = nil
 		}
-		return LegacyDoneMsg{Err: err}
+		return ExternalDoneMsg{Err: err}
 	})
 }

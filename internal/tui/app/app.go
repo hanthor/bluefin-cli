@@ -3,8 +3,8 @@
 // footer, adaptive theming, toasts, and a help overlay.
 //
 // Navigation model: screens are pushed onto the stack to drill down and
-// popped with esc/left/backspace (k9s-style). Legacy interactive flows run
-// through RunLegacy, which releases the terminal and resumes the shell after.
+// popped with esc/left/backspace (k9s-style). Everything renders natively;
+// RunExternal exists only for genuinely external interactive programs.
 package app
 
 import (
@@ -57,7 +57,14 @@ type (
 	}
 	toastExpireMsg struct{}
 	dinoTickMsg    struct{}
+	reloadTopMsg   struct{}
 )
+
+// ReloadTop returns a command that refreshes the current screen's content
+// (e.g. after an in-place toggle changed a label).
+func ReloadTop() tea.Cmd {
+	return func() tea.Msg { return reloadTopMsg{} }
+}
 
 // Push returns a command that pushes a screen onto the stack.
 func Push(s Screen) tea.Cmd {
@@ -168,7 +175,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.toast = ""
 		return m, nil
 
-	case LegacyDoneMsg:
+	case reloadTopMsg:
+		if r, ok := m.top().(Reloader); ok {
+			return m, r.Reload()
+		}
+		return m, nil
+
+	case ExternalDoneMsg:
 		cmds := []tea.Cmd{}
 		if r, ok := m.top().(Reloader); ok {
 			cmds = append(cmds, r.Reload())

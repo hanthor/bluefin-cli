@@ -21,6 +21,8 @@ func TestInit_SetsEnvPrefix(t *testing.T) {
 }
 
 func TestInit_SetsDefaults(t *testing.T) {
+	viper.Reset()
+	t.Cleanup(viper.Reset)
 	if err := Init(); err != nil {
 		t.Fatalf("Init() failed: %v", err)
 	}
@@ -90,6 +92,8 @@ func TestGetConfigDir(t *testing.T) {
 // ── Save tests ───────────────────────────────────────────────────────────────
 
 func TestSave_CreatesDefaultConfig(t *testing.T) {
+	viper.Reset()
+	t.Cleanup(viper.Reset)
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
 
@@ -121,6 +125,8 @@ func TestSave_CreatesDefaultConfig(t *testing.T) {
 }
 
 func TestSave_CreatesConfigDir(t *testing.T) {
+	viper.Reset()
+	t.Cleanup(viper.Reset)
 	// When config dir doesn't exist, Save() should create it
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
@@ -144,6 +150,8 @@ func TestSave_CreatesConfigDir(t *testing.T) {
 }
 
 func TestSave_PreservesExistingValues(t *testing.T) {
+	viper.Reset()
+	t.Cleanup(viper.Reset)
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
 

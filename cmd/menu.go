@@ -123,25 +123,30 @@ func shellMenuScreen() app.Screen {
 		case "toggle_current":
 			current := currentShellName()
 			enabled := shell.CheckStatus()[current]
-			return app.RunLegacy(func() error {
-				return shell.Toggle(current, !enabled)
-			})
+			return tea.Sequence(func() tea.Msg {
+				if err := shell.Toggle(current, !enabled); err != nil {
+					return app.ToastMsg{Text: "Error: " + err.Error(), IsErr: true}
+				}
+				if enabled {
+					return app.ToastMsg{Text: "Shell experience disabled for " + current + "."}
+				}
+				return app.ToastMsg{Text: "Shell experience enabled for " + current + "."}
+			}, app.ReloadTop())
 		case "components":
 			return app.Push(componentsFormScreen())
 		case "motd":
-			return app.RunLegacy(runMotdMenu)
+			return app.Push(motdMenuScreen())
 		case "shells":
-			return app.RunLegacy(shellShellsMenu)
+			return app.Push(shellsFormScreen())
 		case "advanced":
-			return app.RunLegacy(runAdvancedMenu)
+			return app.Push(advancedMenuScreen())
 		}
 		return nil
 	})
 }
 
 // componentsFormScreen hosts the shell-tools multiselect natively; the save
-// is instant, and the (potentially slow, brew-driven) tool installation runs
-// through the legacy bridge afterwards.
+// is instant, and the brew-driven tool installation runs in a RunnerScreen.
 func componentsFormScreen() app.Screen {
 	current := currentShellName()
 	var selected []string
@@ -186,10 +191,10 @@ func componentsFormScreen() app.Screen {
 			return app.Toast("Error: "+err.Error(), true)
 		}
 		return tea.Sequence(
-			app.RunLegacy(func() error {
+			app.Push(app.NewRunner("Installing tools", func() error {
 				shell.InstallTools(current, newCfg)
 				return nil
-			}),
+			})),
 			app.Toast("Components saved.", false),
 		)
 	})
@@ -221,8 +226,8 @@ func bundlesMenuScreen() app.Screen {
 }
 
 // packagesFlow loads a bundle in the background (the menu stays live), then
-// pushes a native multiselect; confirmed changes run through the legacy
-// bridge since brew streams output.
+// pushes a native multiselect; confirmed changes run in a native RunnerScreen
+// that captures brew output.
 func packagesFlow(id, label string) tea.Cmd {
 	return tea.Batch(
 		app.Toast("Loading "+label+"…", false),
@@ -306,13 +311,10 @@ func confirmChangesScreen(toInstall, toRemove []install.Package) app.Screen {
 		if aborted || !confirmed {
 			return nil
 		}
-		return tea.Sequence(
-			app.RunLegacy(func() error {
-				applyPackageChanges(toInstall, toRemove)
-				return nil
-			}),
-			app.Toast("Done — changes applied.", false),
-		)
+		return app.Push(app.NewRunner("Applying changes", func() error {
+			applyPackageChanges(toInstall, toRemove)
+			return nil
+		}))
 	})
 }
 
