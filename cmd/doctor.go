@@ -176,11 +176,19 @@ func doctorReport() (string, int) {
 }
 
 func checkBrew() checkResult {
-	if _, err := exec.LookPath("brew"); err != nil {
-		return checkResult{name: "Homebrew on PATH", warn: true,
-			note: "brew not found — Install Apps bundles need it: https://brew.sh"}
+	if _, err := exec.LookPath("brew"); err == nil {
+		return checkResult{ok: true, name: "Homebrew on PATH"}
 	}
-	return checkResult{ok: true, name: "Homebrew on PATH"}
+	// The classic macOS papercut: brew is installed but the shell was never
+	// taught about it.
+	for _, p := range []string{"/opt/homebrew/bin/brew", "/usr/local/bin/brew", "/home/linuxbrew/.linuxbrew/bin/brew"} {
+		if _, err := os.Stat(p); err == nil {
+			return checkResult{name: "Homebrew on PATH", warn: true,
+				note: fmt.Sprintf("brew is installed at %s but not on PATH — add: eval \"$(%s shellenv)\"", p, p)}
+		}
+	}
+	return checkResult{name: "Homebrew on PATH", warn: true,
+		note: "brew not found — Install Apps bundles need it: https://brew.sh"}
 }
 
 func checkShellIntegration() checkResult {

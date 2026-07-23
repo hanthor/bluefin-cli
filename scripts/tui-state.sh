@@ -18,6 +18,16 @@ fail=0
 ok()   { echo "ok   $1"; }
 bad()  { echo "FAIL $1"; fail=1; }
 
+# wait_for <pattern> <seconds>: poll the pane until the pattern appears.
+wait_for() {
+  n=0
+  while [ $n -lt $(( $2 * 2 )) ]; do
+    tmux capture-pane -t "$SESSION" -p | grep -q "$1" && return 0
+    sleep 0.5; n=$((n+1))
+  done
+  return 1
+}
+
 tmux new-session -d -s "$SESSION" -x 100 -y 28
 tmux send-keys -t "$SESSION" "env HOME=$H SHELL=/bin/bash TERM=xterm-256color $BIN menu" Enter
 sleep 2
@@ -26,7 +36,8 @@ sleep 2
 tmux send-keys -t "$SESSION" j; sleep 0.2
 tmux send-keys -t "$SESSION" j; sleep 0.2
 tmux send-keys -t "$SESSION" Enter; sleep 1
-tmux send-keys -t "$SESSION" Enter; sleep 3   # runner: "Enabling bash"
+tmux send-keys -t "$SESSION" Enter            # runner: "Enabling bash"
+wait_for "✓ done" 30 || bad "enable runner did not finish"
 tmux send-keys -t "$SESSION" Escape; sleep 0.6
 
 grep -q "bluefin-cli init" "$H/.bashrc" \
@@ -39,7 +50,8 @@ tmux capture-pane -t "$SESSION" -p | grep -q "Disable for current shell" \
   || bad "menu label did not refresh after toggle"
 
 # Toggle back off and verify the line is gone but the base content survives.
-tmux send-keys -t "$SESSION" Enter; sleep 3
+tmux send-keys -t "$SESSION" Enter
+wait_for "✓ done" 30 || bad "disable runner did not finish"
 tmux send-keys -t "$SESSION" Escape; sleep 0.6
 grep -q "bluefin-cli init" "$H/.bashrc" \
   && bad "TUI disable left the init line behind" \
