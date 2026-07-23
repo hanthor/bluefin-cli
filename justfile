@@ -305,3 +305,16 @@ tui-smoke:
     go build -tags extra -o tmp/bfc-smoke .
     ./scripts/tui-smoke.sh tmp/bfc-smoke
     rm -f tmp/bfc-smoke
+
+# Full local verification gauntlet — what CI checks, without the queue.
+# GOTMPDIR keeps test binaries off /tmp, which is noexec on some setups.
+verify:
+    mkdir -p tmp/gotmp
+    go build ./...
+    go build -tags extra ./...
+    gofmt -l . | grep -v '^tmp/' | (! grep .) || (echo "gofmt needed" && exit 1)
+    GOTMPDIR=$PWD/tmp/gotmp go vet -tags extra ./...
+    go build -tags extra -o bluefin-cli .
+    GOTMPDIR=$PWD/tmp/gotmp go test -tags extra ./...
+    rm -f bluefin-cli
+    just tui-smoke

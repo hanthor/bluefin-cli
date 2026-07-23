@@ -58,6 +58,28 @@ jobs:
     - name: Run smoke suite
       run: ./scripts/tui-smoke.sh ./bluefin-cli-smoke
 
+  goreleaser-check:
+    name: goreleaser config
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Install GoReleaser
+      uses: goreleaser/goreleaser-action@v7
+      with:
+        version: '~> v2'
+        install-only: true
+
+    # Deprecation warnings (brews) are accepted; hard config errors fail.
+    - name: Check config
+      run: |
+        out=$(goreleaser check 2>&1) && exit 0
+        echo "$out"
+        echo "$out" | grep -q "valid, but uses deprecated" && exit 0
+        exit 1
+
   gofmt:
     name: gofmt
     runs-on: ubuntu-latest
