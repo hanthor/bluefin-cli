@@ -75,7 +75,7 @@ func Toast(text string, isErr bool) tea.Cmd {
 }
 
 const (
-	headerHeight = 3 // title row, sky row (dino head), seafloor row
+	headerHeight = 4 // title row, two sky rows (dino), seafloor row
 	footerHeight = 2 // blank + hints
 	minBodyLines = 3
 )

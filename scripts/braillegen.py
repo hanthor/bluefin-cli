@@ -23,25 +23,32 @@ def to_braille(grid):
         out.append(line)
     return out
 
-# 8 rows x 14 cols, facing right like the Chrome dino.
-# Row 7 is the leg row; frames differ there.
+# 14 cols x 12 rows, hand-reduced from the real Chrome offline T-rex sprite
+# (tmp/sprite.png from the t-rex-runner assets): head with eye notch
+# top-right, tail sweeping down-left, arm nub, alternating legs.
+# Row 10-11 are the leg rows; frames differ there.
 BODY = [
-    "..........####",  # head top
-    "..........#.##",  # eye (blank pixel) + snout
-    "..........####",  # jaw
-    "##.....#####..",  # tail tip + high back to neck
-    "###..#######..",  # tail slopes into body
-    ".#########....",  # body
-    "..########....",  # belly
+    "........######",
+    "........#.####",  # eye (blank pixel)
+    "........######",
+    "........####..",
+    "#......#####..",  # tail tip
+    "##....######..",
+    "###..#######.#",  # arm nub
+    ".############.",
+    "..##########..",
+    "...########...",
 ]
-LEGS_A = "...#.....#...."   # stride: legs apart
-LEGS_B = "....##..##...."   # stride: legs tucked
-LEGS_P = "...##...##...."   # paused: standing
+LEGS = {
+    "run A": ["....##.###....", "....#....#...."],
+    "run B": ["....##.###....", ".....#..#....."],
+    "pause": ["....##.###....", "....#...#....."],
+}
 
-for name, legs in (("run A", LEGS_A), ("run B", LEGS_B), ("pause", LEGS_P)):
-    grid = BODY + [legs]
+for name, legs in LEGS.items():
+    grid = BODY + legs
     print(f"--- {name} ---")
     for r in grid:
-        print("  " + r.replace('.', '·').replace('#', '█'))
+        print("  " + r.replace('.', '\u00b7').replace('#', '\u2588'))
     for line in to_braille(grid):
         print("  |" + line + "|")
