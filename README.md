@@ -16,64 +16,64 @@ A powerful, modern CLI tool for managing shell configuration and development env
 
 ## 🚀 Installation
 
-### Windows (PowerShell) - Recommended
+### One-liner (Linux / macOS)
 
-Build and install from source:
-
-```powershell
-git clone https://github.com/hanthor/bluefin-cli.git
-cd bluefin-cli
-go build -o bluefin-cli.exe .
-
-# Optional: move to a permanent location on PATH
-
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-New-Item -ItemType Directory -Force "$HOME\\bin" | Out-Null
-Move-Item .\\bluefin-cli.exe "$HOME\\bin\\bluefin-cli.exe" -Force
-$env:PATH = "$HOME\\bin;$env:PATH"
+```bash
+curl -fsSL https://raw.githubusercontent.com/tuna-os/bluefin-cli/main/install.sh | sh
 ```
 
-Enable shell integration for both `pwsh` and Windows PowerShell profiles:
+### One-liner (Windows PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/tuna-os/bluefin-cli/main/install.ps1 | iex
+```
+
+Then enable shell integration:
 
 ```powershell
 bluefin-cli shell powershell on
 ```
 
-### macOS / Linux (Go Install)
-
-```bash
-go install github.com/hanthor/bluefin-cli@latest
-```
-
-### Build from Source (Any OS)
-
-**Prerequisites:**
-- Go 1.21 or later
-
-```bash
-git clone https://github.com/hanthor/bluefin-cli.git
-cd bluefin-cli
-go build -o bluefin-cli .
-```
-
-On Windows, use `go build -o bluefin-cli.exe .`.
-
-### Homebrew (Experimental)
+### Homebrew (Linux / macOS)
 
 ```bash
 brew tap ublue-os/homebrew-experimental-tap
 brew install bluefin-cli
 ```
 
-### Winget (Planned)
-
-Once published to Winget, installation will be:
+### Winget (Windows)
 
 ```powershell
 winget install --id Hanthor.BluefinCLI --exact
 ```
 
-Maintainers: automated Winget submission is configured in `.github/workflows/winget.yml`.
+### Scoop (Windows)
+
+```powershell
+scoop bucket add tuna-os https://github.com/tuna-os/scoop-bucket
+scoop install bluefin-cli
+```
+
+### Go Install
+
+```bash
+go install github.com/tuna-os/bluefin-cli@latest
+```
+
+### Build from Source (Any OS)
+
+**Prerequisites:**
+- Go 1.25 or later
+
+```bash
+git clone https://github.com/tuna-os/bluefin-cli.git
+cd bluefin-cli
+go build -o bluefin-cli .
+```
+
+On Windows, use `go build -o bluefin-cli.exe .`.
+
+Maintainers: package publishing (Homebrew tap, Winget, Scoop) is automated by GoReleaser on release; `.github/workflows/winget.yml` is a manual fallback for re-submitting a Winget version.
 
 ## 📖 Usage
 

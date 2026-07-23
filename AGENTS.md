@@ -33,4 +33,4 @@ The project uses `just` as a task runner.
 - **Modifying Bling**:
     - If changing the shell script logic, edit `internal/bling/resources/bling.sh` or `.fish`.
     - If changing how it hooks into shells, edit `internal/bling/bling.go`.
-- **UI Changes**: TUI logic is often inline in `cmd/` for simple commands or in `cmd/menu.go` for the main menu. Use `lipgloss` styles defined in the respective files.
+- **UI Changes**: The interactive menu is a persistent Bubble Tea v2 shell in `internal/tui/app` (screen stack + breadcrumb header + contextual footer + ctrl+p palette + the header dino). Menus are `app.MenuScreen`s built in `cmd/menu.go`; every destination is also registered as an `app.Action` for the palette. Legacy flows (huh forms with their own `Run()`, brew/winget installs that stream to stdout) run through `app.RunLegacy`, which releases the terminal and resumes the shell — migrate these to native screens over time rather than adding new `tui.ClearScreen()`-style flows. Colors come from semantic tokens in `internal/tui/theme` (Catppuccin Latte/Mocha, auto light/dark from the terminal background) — never hardcode hex/ANSI colors in views.

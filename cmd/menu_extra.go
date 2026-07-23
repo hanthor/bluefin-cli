@@ -3,38 +3,33 @@
 package cmd
 
 import (
-	"charm.land/huh/v2"
+	tea "charm.land/bubbletea/v2"
 	"github.com/tuna-os/bluefin-cli/internal/env"
+	"github.com/tuna-os/bluefin-cli/internal/tui/app"
 )
 
-func addExtraMenuOptions(opts []huh.Option[string]) []huh.Option[string] {
-	wallpapersLabel := "🖼  Wallpapers ❯"
-	fontsLabel := "🔤 Fonts ❯"
-	starshipLabel := "🚀 Starship Theme ❯"
-
-	// Standard (Standard) section
-	opts = append(opts, huh.NewOption(wallpapersLabel, "wallpapers"))
-	opts = append(opts, huh.NewOption(fontsLabel, "fonts"))
-	opts = append(opts, huh.NewOption(starshipLabel, "starship"))
-
-	if env.IsWSL() || env.IsWindows() {
-		sunsetLabel := "🌇 Sunset Switching ❯"
-		opts = append(opts, huh.NewOption(sunsetLabel, "sunset"))
+func extraMenuItems() []app.MenuItem {
+	items := []app.MenuItem{
+		{Icon: "🖼 ", Label: "Wallpapers", Value: "wallpapers", Submenu: true},
+		{Icon: "🔤", Label: "Fonts", Value: "fonts", Submenu: true},
+		{Icon: "🚀", Label: "Starship Theme", Value: "starship", Submenu: true},
 	}
-	
-	return opts
+	if env.IsWSL() || env.IsWindows() {
+		items = append(items, app.MenuItem{Icon: "🌇", Label: "Sunset Switching", Value: "sunset", Submenu: true})
+	}
+	return items
 }
 
-func handleExtraMenuChoice(choice string) (bool, error) {
-	switch choice {
+func extraMenuDo(value string) tea.Cmd {
+	switch value {
 	case "wallpapers":
-		return true, runWallpapersMenu()
+		return app.RunLegacy(runWallpapersMenu)
 	case "fonts":
-		return true, runFontsMenu()
+		return app.RunLegacy(runFontsMenu)
 	case "starship":
-		return true, runStarshipMenu()
+		return app.RunLegacy(runStarshipMenu)
 	case "sunset":
-		return true, RunSunsetSetupFlow()
+		return app.RunLegacy(RunSunsetSetupFlow)
 	}
-	return false, nil
+	return nil
 }

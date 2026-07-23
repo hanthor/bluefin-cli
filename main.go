@@ -13,8 +13,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Warning: failed to initialize configuration: %v\n", err)
 	}
 
+	// fang prints styled errors itself; just set the exit code.
 	if err := cmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }

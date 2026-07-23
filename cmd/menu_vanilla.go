@@ -3,28 +3,26 @@
 package cmd
 
 import (
-	"charm.land/huh/v2"
+	tea "charm.land/bubbletea/v2"
+	"github.com/tuna-os/bluefin-cli/internal/tui/app"
 )
 
-func addExtraMenuOptions(opts []huh.Option[string]) []huh.Option[string] {
-	wallpapersLabel := "🖼  Wallpapers ❯"
-	fontsLabel := "🔤 Fonts ❯"
-	starshipLabel := "🚀 Starship Theme ❯"
-
-	opts = append(opts, huh.NewOption(wallpapersLabel, "wallpapers"))
-	opts = append(opts, huh.NewOption(fontsLabel, "fonts"))
-	opts = append(opts, huh.NewOption(starshipLabel, "starship"))
-	return opts
+func extraMenuItems() []app.MenuItem {
+	return []app.MenuItem{
+		{Icon: "🖼 ", Label: "Wallpapers", Value: "wallpapers", Submenu: true},
+		{Icon: "🔤", Label: "Fonts", Value: "fonts", Submenu: true},
+		{Icon: "🚀", Label: "Starship Theme", Value: "starship", Submenu: true},
+	}
 }
 
-func handleExtraMenuChoice(choice string) (bool, error) {
-	switch choice {
+func extraMenuDo(value string) tea.Cmd {
+	switch value {
 	case "wallpapers":
-		return true, runWallpapersMenu()
+		return app.RunLegacy(runWallpapersMenu)
 	case "fonts":
-		return true, runFontsMenu()
+		return app.RunLegacy(runFontsMenu)
 	case "starship":
-		return true, runStarshipMenu()
+		return app.RunLegacy(runStarshipMenu)
 	}
-	return false, nil
+	return nil
 }

@@ -57,12 +57,12 @@ motd-test: build-container build
 # Build the standard binary (Standard features only)
 build-standard:
     @echo "Building standard binary..."
-    go build -ldflags "-s -w -X github.com/hanthor/bluefin-cli/cmd.version=$(git describe --tags --always --dirty)" -o bluefin-cli
+    go build -ldflags "-s -w -X github.com/tuna-os/bluefin-cli/cmd.version=$(git describe --tags --always --dirty)" -o bluefin-cli
 
 # Build the plus binary (Everything)
 build-plus:
     @echo "Building plus binary..."
-    go build -tags extra -ldflags "-s -w -X github.com/hanthor/bluefin-cli/cmd.version=$(git describe --tags --always --dirty)" -o bluefin-cli-plus
+    go build -tags extra -ldflags "-s -w -X github.com/tuna-os/bluefin-cli/cmd.version=$(git describe --tags --always --dirty)" -o bluefin-cli-plus
 
 # Build both binaries
 build-all: build-standard build-plus
@@ -299,3 +299,9 @@ mod-info: build-container
         -w /workspace \
         bluefin-cli-dev \
         go version
+
+# Run the end-to-end TUI smoke test in tmux (drives real keys, asserts screens)
+tui-smoke:
+    go build -tags extra -o tmp/bfc-smoke .
+    ./scripts/tui-smoke.sh tmp/bfc-smoke
+    rm -f tmp/bfc-smoke

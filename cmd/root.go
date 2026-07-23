@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/tuna-os/bluefin-cli/internal/countme"
+	"github.com/charmbracelet/fang"
 	"github.com/spf13/cobra"
+	"github.com/tuna-os/bluefin-cli/internal/countme"
 )
 
 var (
@@ -46,9 +48,10 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-// Execute runs the root command
+// Execute runs the root command via fang (styled help/errors, manpage and
+// completion commands, --version).
 func Execute() error {
-	return rootCmd.Execute()
+	return fang.Execute(context.Background(), rootCmd, fang.WithVersion(version))
 }
 
 func init() {
