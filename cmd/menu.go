@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/huh/v2"
 	"github.com/spf13/cobra"
 	"github.com/tuna-os/bluefin-cli/internal/env"
 	"github.com/tuna-os/bluefin-cli/internal/install"
@@ -79,14 +80,7 @@ func mainMenuItems() []app.MenuItem {
 func mainMenuSelect(it app.MenuItem) tea.Cmd {
 	switch it.Value {
 	case "status":
-		return app.RunLegacy(func() error {
-			tui.ClearScreen()
-			if err := status.Show(); err != nil {
-				return err
-			}
-			tui.Pause()
-			return nil
-		})
+		return app.Push(app.NewText("Status", status.Render))
 	case "shell":
 		return app.Push(shellMenuScreen())
 	case "bundles":
@@ -133,7 +127,7 @@ func shellMenuScreen() app.Screen {
 				return shell.Toggle(current, !enabled)
 			})
 		case "components":
-			return app.RunLegacy(configureShellTools)
+			return app.Push(componentsFormScreen())
 		case "motd":
 			return app.RunLegacy(runMotdMenu)
 		case "shells":
@@ -142,6 +136,62 @@ func shellMenuScreen() app.Screen {
 			return app.RunLegacy(runAdvancedMenu)
 		}
 		return nil
+	})
+}
+
+// componentsFormScreen hosts the shell-tools multiselect natively; the save
+// is instant, and the (potentially slow, brew-driven) tool installation runs
+// through the legacy bridge afterwards.
+func componentsFormScreen() app.Screen {
+	current := currentShellName()
+	var selected []string
+
+	build := func() *huh.Form {
+		cfg, err := shell.LoadConfig(current)
+		if err != nil {
+			cfg = shell.DefaultConfig(current)
+		}
+		tools := shell.ToolsForShell(current)
+		selected = selected[:0]
+		options := make([]huh.Option[string], 0, len(tools))
+		for _, tool := range tools {
+			if cfg.IsEnabled(tool.Name) {
+				selected = append(selected, tool.Name)
+			}
+			options = append(options,
+				huh.NewOption(fmt.Sprintf("%s (%s)", tool.Name, tool.Description), tool.Name))
+		}
+		return huh.NewForm(huh.NewGroup(
+			huh.NewMultiSelect[string]().
+				Title("Select tools to enable").
+				Description("Uncheck to disable specific tools").
+				Options(options...).
+				Value(&selected),
+		)).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
+	}
+
+	return app.NewForm("Components", build, func(aborted bool) tea.Cmd {
+		if aborted {
+			return nil
+		}
+		newCfg := shell.DefaultConfig(current)
+		on := make(map[string]bool, len(selected))
+		for _, s := range selected {
+			on[s] = true
+		}
+		for _, tool := range shell.ToolsForShell(current) {
+			newCfg.SetEnabled(tool.Name, on[tool.Name])
+		}
+		if err := shell.SaveConfig(newCfg); err != nil {
+			return app.Toast("Error: "+err.Error(), true)
+		}
+		return tea.Sequence(
+			app.RunLegacy(func() error {
+				shell.InstallTools(current, newCfg)
+				return nil
+			}),
+			app.Toast("Components saved.", false),
+		)
 	})
 }
 

@@ -27,10 +27,23 @@ var (
 	labelStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
 )
 
-// Show displays the current configuration status
+// Show prints the status report to stdout, sized to the terminal.
 func Show() error {
-	fmt.Println(titleStyle.Render("Bluefin CLI Status"))
-	fmt.Println()
+	width, _, err := term.GetSize(os.Stdout.Fd())
+	if err != nil || width <= 0 {
+		width = 80
+	}
+	out, err := Render(width)
+	if err != nil {
+		return err
+	}
+	fmt.Println(out)
+	return nil
+}
+
+// Render builds the status report for the given width. Two columns need
+// ~76 cells; narrower widths stack vertically so the columns can't overlap.
+func Render(width int) (string, error) {
 
 	// --- Left Column ---
 	var leftCol string
@@ -225,12 +238,6 @@ func Show() error {
 		}
 	}
 
-	// Two columns need ~76 cells; stack vertically on narrow terminals so
-	// the columns can't overlap.
-	width, _, err := term.GetSize(os.Stdout.Fd())
-	if err != nil || width <= 0 {
-		width = 80
-	}
 	var formatted string
 	if width < 76 {
 		formatted = leftCol + "\n" + rightCol
@@ -241,7 +248,5 @@ func Show() error {
 		)
 	}
 
-	fmt.Println(formatted)
-
-	return nil
+	return titleStyle.Render("Bluefin CLI Status") + "\n\n" + formatted, nil
 }
