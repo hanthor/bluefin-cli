@@ -135,6 +135,25 @@ scoops:
     # token can't fail the release.
     skip_upload: '{{ if envOrDefault "SCOOP_BUCKET_TOKEN" "" }}auto{{ else }}true{{ end }}'
 
+# AUR binary package for Arch users. Requires an AUR_KEY secret (SSH private
+# key with publish access to the bluefin-cli-bin AUR package); skips itself
+# when the secret is absent so a missing key can't fail the release.
+aurs:
+  - name: bluefin-cli-bin
+    ids:
+      - standard
+    homepage: "https://github.com/tuna-os/bluefin-cli"
+    description: "Make your terminal experience awesome — shell config, tool bundles, and theming for any OS"
+    license: Apache-2.0
+    maintainers:
+      - "TunaOS <noreply@github.com>"
+    git_url: "ssh://aur@aur.archlinux.org/bluefin-cli-bin.git"
+    private_key: '{{ envOrDefault "AUR_KEY" "" }}'
+    skip_upload: '{{ if envOrDefault "AUR_KEY" "" }}auto{{ else }}true{{ end }}'
+    commit_author:
+      name: tunabot
+      email: noreply@github.com
+
 winget:
   - name: BluefinCLI
     publisher: Hanthor

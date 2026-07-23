@@ -58,6 +58,24 @@ scoop bucket add tuna-os https://github.com/tuna-os/scoop-bucket
 scoop install bluefin-cli
 ```
 
+### deb / rpm (Debian, Ubuntu, Fedora, openSUSE…)
+
+Every release ships native packages — grab the one for your distro from the
+[latest release](https://github.com/tuna-os/bluefin-cli/releases/latest):
+
+```bash
+# Debian/Ubuntu
+sudo dpkg -i bluefin-cli_<version>_linux_amd64.deb
+# Fedora & friends
+sudo rpm -i bluefin-cli_<version>_linux_amd64.rpm
+```
+
+### AUR (Arch)
+
+```bash
+yay -S bluefin-cli-bin
+```
+
 ### Go Install
 
 ```bash

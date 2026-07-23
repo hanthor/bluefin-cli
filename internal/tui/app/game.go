@@ -336,13 +336,20 @@ func (g *GameScreen) View(width, height int) string {
 		cv.Set(g.bubbles[i].x, g.bubbles[i].y, t.Overlay)
 	}
 
-	// Obstacles.
+	// Obstacles. Kelp hue shifts as the dino swims deeper.
+	kelpColor := t.Info
+	switch {
+	case g.score > 800:
+		kelpColor = t.Warning
+	case g.score > 400:
+		kelpColor = t.AccentAlt
+	}
 	for _, o := range g.obstacles {
 		if o.fly {
-			cv.Blit(gameFishPx, solid(t.AccentAlt), o.x, groundY-gameDinoH-gameFishH-2)
+			cv.Blit(gameFishPx, solid(t.Error), o.x, groundY-gameDinoH-gameFishH-2)
 			continue
 		}
-		cv.Blit(gameKelp, solid(t.Info), o.x, groundY-gameKelpH+1)
+		cv.Blit(gameKelp, solid(kelpColor), o.x, groundY-gameKelpH+1)
 	}
 
 	// Dino.
@@ -353,7 +360,7 @@ func (g *GameScreen) View(width, height int) string {
 	cv.Blit(sprite, solid(t.Success), gameDinoX, groundY-gameDinoH-g.lift()+1)
 
 	var b strings.Builder
-	score := fmt.Sprintf(" score %d", g.score)
+	score := fmt.Sprintf(" score %d · %dm deep", g.score, g.score/10)
 	if g.best > 0 {
 		score += fmt.Sprintf("   best %d", g.best)
 	}
