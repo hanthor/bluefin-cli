@@ -24,7 +24,7 @@ the shell resumes) — they are candidates for native-screen migration.
 
 ```mermaid
 graph TD
-    Home[Home] --> Status["📊 Status (legacy view + pause)"]
+    Home[Home] --> Status["📊 Status (native scrollable view)"]
     Home --> Shell[🐚 Bluefin Shell]
     Home --> Install[📦 Install Apps]
     Home --> Wallpapers["🖼 Wallpapers (legacy multiselect)"]
@@ -34,7 +34,7 @@ graph TD
     Home --> Exit[👋 Exit]
 
     Shell --> Toggle["🔄 Toggle current shell (auto-detected)"]
-    Shell --> Components["🔧 Configure Components (legacy multiselect)"]
+    Shell --> Components["🔧 Configure Components (native multiselect)"]
     Shell --> MOTD["📰 MOTD Settings (legacy)"]
     Shell --> Shells["🐚 Other Shells (legacy multiselect)"]
     Shell --> Advanced["🎨 Advanced (legacy)"]
@@ -67,3 +67,18 @@ Three layers, run by CI and `just` recipes:
 3. **End-to-end smoke** (`scripts/tui-smoke.sh`, `just tui-smoke`): drives the
    real binary in a tmux pane — sends actual keystrokes, captures the screen,
    and asserts rendering, drill-down, filter, palette, help, and quit.
+
+## Native screens & extras
+
+- **Status** and **Configure Components** now render natively inside the
+  shell (`app.TextScreen` / `app.FormScreen`) — the header, dino, and theme
+  stay on screen. Remaining *(legacy)* leaves are migration candidates using
+  the same two wrappers.
+- `bluefin-cli doctor` — environment diagnostics with fix hints.
+- `bluefin-cli theme <flavor>` — pin a Catppuccin flavor (latte, frappe,
+  macchiato, mocha) or `auto` to follow the terminal background.
+- `bluefin-cli update` — self-update for script installs, now verified
+  against the release's `checksums.txt`; the menu also checks for updates in
+  the background and shows a toast.
+- 🦕 **Dino Run** — hidden runner mini-game: `ctrl+p` → "Dino Run", or the
+  hidden `bluefin-cli dino` command. Space jumps, r restarts.

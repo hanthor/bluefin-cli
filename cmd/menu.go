@@ -231,6 +231,10 @@ func registerPaletteActions() {
 			ID: "status", Icon: "📊", Label: "Show Status", Section: "Home",
 			Do: func() tea.Cmd { return mainMenuSelect(app.MenuItem{Value: "status"}) },
 		})
+		app.Register(app.Action{
+			ID: "dino", Icon: "🦕", Label: "Dino Run", Section: "Fun",
+			Do: func() tea.Cmd { return app.Push(app.NewGame()) },
+		})
 		for _, cat := range availableBundleCategories() {
 			id := cat.ID
 			app.Register(app.Action{
