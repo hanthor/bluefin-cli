@@ -35,7 +35,7 @@ cap
 assert "main menu renders"        "Bluefin CLI › Home"
 assert "menu items present"       "Install Apps"
 assert "footer hints present"     "filter"
-assert "dino is on screen"        "⣯"
+assert "dino is on screen"        "⣽"
 
 keys j; keys j; keys j; keys Enter; sleep 0.5; cap
 assert "drill-down breadcrumb"    "› Install Apps"

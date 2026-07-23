@@ -339,6 +339,12 @@ func registerPaletteActions() {
 			ID: "doctor", Icon: "🩺", Label: "Doctor", Section: "Home",
 			Do: func() tea.Cmd { return doctorScreenCmd() },
 		})
+		app.Register(app.Action{
+			ID: "update", Icon: "⬆", Label: "Check for Updates", Section: "Home",
+			Do: func() tea.Cmd {
+				return app.Push(app.NewRunner("Update", func() error { return runUpdate(false) }))
+			},
+		})
 		for _, cat := range availableBundleCategories() {
 			id, label := cat.ID, cat.Label
 			app.Register(app.Action{

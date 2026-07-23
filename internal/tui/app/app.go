@@ -82,7 +82,7 @@ func Toast(text string, isErr bool) tea.Cmd {
 }
 
 const (
-	headerHeight = 4 // title row, two sky rows (dino), seafloor row
+	headerHeight = 5 // title row, three sky rows (dino), seafloor row
 	footerHeight = 2 // blank + hints
 	minBodyLines = 3
 )
@@ -269,8 +269,9 @@ func (m Model) renderHeader() string {
 	crumb := lipgloss.NewStyle().Foreground(t.TextMuted).Render(strings.Join(crumbs, " › "))
 	titleRow := title + sep + crumb
 
-	// The dino occupies two rows: a sky line for head and tail, and a
-	// full-width braille seafloor that doubles as the header rule.
+	// The dino occupies four rows: three sky lines for head, body, and
+	// tail, and a full-width braille seafloor that doubles as the header
+	// rule.
 	return titleRow + "\n" + m.dino.renderGround(max(m.width, 1), t)
 }
 

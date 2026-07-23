@@ -31,6 +31,7 @@ type RunnerScreen struct {
 	started time.Time
 	elapsed time.Duration
 	spin    int
+	scroll  int // manual scroll offset once done; tails while running
 }
 
 type runnerEvent struct {
@@ -104,6 +105,19 @@ func (s *RunnerScreen) exec() {
 }
 
 func (s *RunnerScreen) Update(msg tea.Msg) (Screen, tea.Cmd) {
+	if key, ok := msg.(tea.KeyPressMsg); ok && s.done {
+		switch key.String() {
+		case "up", "k":
+			s.scroll = max(s.scroll-1, 0)
+		case "down", "j":
+			s.scroll++
+		case "g", "home":
+			s.scroll = 0
+		case "G", "end":
+			s.scroll = 1 << 30
+		}
+		return s, nil
+	}
 	if t, ok := msg.(runnerTickMsg); ok && t.s == s {
 		if s.done {
 			return s, nil
@@ -119,6 +133,7 @@ func (s *RunnerScreen) Update(msg tea.Msg) (Screen, tea.Cmd) {
 	if m.ev.done {
 		s.done, s.err = true, m.ev.err
 		s.elapsed = time.Since(s.started)
+		s.scroll = 1 << 30 // start at the tail; j/k adjust from there
 		return s, nil
 	}
 	s.lines = append(s.lines, m.ev.line)
@@ -134,9 +149,14 @@ func (s *RunnerScreen) View(width, height int) string {
 
 	body := max(height-2, 3)
 	start := max(len(s.lines)-body, 0)
+	if s.done {
+		s.scroll = max(min(s.scroll, len(s.lines)-body), 0)
+		start = s.scroll
+	}
+	end := min(start+body, len(s.lines))
 	out := make([]string, 0, body+2)
 	out = append(out, "")
-	for _, l := range s.lines[start:] {
+	for _, l := range s.lines[start:end] {
 		out = append(out, " "+lipgloss.NewStyle().MaxWidth(max(width-2, 10)).Render(dim.Render(l)))
 	}
 
@@ -161,7 +181,7 @@ func (s *RunnerScreen) View(width, height int) string {
 
 func (s *RunnerScreen) KeyHints() []KeyHint {
 	if s.done {
-		return []KeyHint{{"esc", "back"}}
+		return []KeyHint{{"jk", "scroll"}, {"esc", "back"}}
 	}
 	return []KeyHint{}
 }

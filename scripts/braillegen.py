@@ -23,26 +23,30 @@ def to_braille(grid):
         out.append(line)
     return out
 
-# 14 cols x 12 rows, hand-reduced from the real Chrome offline T-rex sprite
-# (tmp/sprite.png from the t-rex-runner assets): head with eye notch
-# top-right, tail sweeping down-left, arm nub, alternating legs.
-# Row 10-11 are the leg rows; frames differ there.
+# 16 cols x 16 rows, hand-refined from a box-filter downsample of the real
+# Chrome offline T-rex sprite (tmp/dino_run*.png from the t-rex-runner
+# assets): solid head with eye notch, open jaw, tail sweeping down-left,
+# arm nub, alternating legs. Rows 14-15 are the leg rows.
 BODY = [
-    "........######",
-    "........#.####",  # eye (blank pixel)
-    "........######",
-    "........####..",
-    "#......#####..",  # tail tip
-    "##....######..",
-    "###..#######.#",  # arm nub
-    ".############.",
-    "..##########..",
-    "...########...",
+    "........########",
+    "........##.#####",  # eye (blank pixel)
+    "........########",
+    "........########",
+    "........#####...",
+    "........####....",  # open jaw
+    "........######..",
+    ".#....######....",  # tail tip
+    ".##..#######.#..",  # arm nub
+    ".###########.#..",
+    ".###########....",
+    ".##########.....",
+    "..#########.....",
+    "...########.....",
 ]
 LEGS = {
-    "run A": ["....##.###....", "....#....#...."],
-    "run B": ["....##.###....", ".....#..#....."],
-    "pause": ["....##.###....", "....#...#....."],
+    "run A": ["....##...##.....", "....#....#......"],
+    "run B": ["....##..##......", ".....##...#....."],
+    "pause": ["....##...##.....", "....##...##....."],
 }
 
 for name, legs in LEGS.items():

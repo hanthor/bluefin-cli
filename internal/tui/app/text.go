@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -45,6 +46,10 @@ func (s *TextScreen) Update(msg tea.Msg) (Screen, tea.Cmd) {
 		s.scroll = max(s.scroll-1, 0)
 	case "down", "j":
 		s.scroll++ // clamped against content height in View
+	case "pgup", "ctrl+u":
+		s.scroll = max(s.scroll-10, 0)
+	case "pgdown", "ctrl+d":
+		s.scroll += 10
 	case "g", "home":
 		s.scroll = 0
 	case "G", "end":
@@ -63,11 +68,20 @@ func (s *TextScreen) View(width, height int) string {
 		return "\n " + lipgloss.NewStyle().Foreground(theme.DefaultTheme.Error).Render(s.fetchErr.Error())
 	}
 	lines := strings.Split(strings.TrimRight(s.content, "\n"), "\n")
-	s.scroll = max(min(s.scroll, len(lines)-height), 0)
-	end := min(s.scroll+height, len(lines))
-	body := make([]string, 0, end-s.scroll)
+	avail := height
+	if len(lines) > height {
+		avail = height - 1 // reserve a row for the position indicator
+	}
+	s.scroll = max(min(s.scroll, len(lines)-avail), 0)
+	end := min(s.scroll+avail, len(lines))
+	body := make([]string, 0, end-s.scroll+1)
 	for _, l := range lines[s.scroll:end] {
 		body = append(body, " "+l)
+	}
+	if len(lines) > height {
+		pos := lipgloss.NewStyle().Foreground(theme.DefaultTheme.TextFaint).
+			Render(fmt.Sprintf(" — %d-%d of %d —", s.scroll+1, end, len(lines)))
+		body = append(body, pos)
 	}
 	return strings.Join(body, "\n")
 }

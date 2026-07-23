@@ -144,6 +144,14 @@ func (s *MenuScreen) Update(msg tea.Msg) (Screen, tea.Cmd) {
 		s.query = ""
 	case "enter", "right", "l":
 		return s.selectCurrent()
+	default:
+		// Number keys jump straight to that row and select it.
+		if k := key.String(); len(k) == 1 && k[0] >= '1' && k[0] <= '9' {
+			if n := int(k[0] - '1'); n < len(s.visible()) {
+				s.cursor = n
+				return s.selectCurrent()
+			}
+		}
 	}
 	return s, nil
 }
