@@ -299,3 +299,9 @@ mod-info: build-container
         -w /workspace \
         bluefin-cli-dev \
         go version
+
+# Run the end-to-end TUI smoke test in tmux (drives real keys, asserts screens)
+tui-smoke:
+    go build -tags extra -o tmp/bfc-smoke .
+    ./scripts/tui-smoke.sh tmp/bfc-smoke
+    rm -f tmp/bfc-smoke

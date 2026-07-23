@@ -97,7 +97,7 @@ func Latest() (*Release, error) {
 	if err != nil {
 		return nil, fmt.Errorf("checking for updates: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("checking for updates: GitHub API returned %s", resp.Status)
 	}
@@ -150,13 +150,13 @@ func Apply(rel *Release, progress io.Writer) error {
 		return fmt.Errorf("no release asset %q for %s/%s", wanted, runtime.GOOS, runtime.GOARCH)
 	}
 
-	fmt.Fprintf(progress, "Downloading %s...\n", wanted)
+	_, _ = fmt.Fprintf(progress, "Downloading %s...\n", wanted)
 	client := &http.Client{Timeout: 5 * time.Minute}
 	resp, err := client.Get(url)
 	if err != nil {
 		return fmt.Errorf("downloading update: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("downloading update: server returned %s", resp.Status)
 	}
@@ -171,7 +171,7 @@ func Apply(rel *Release, progress io.Writer) error {
 		return err
 	}
 
-	fmt.Fprintf(progress, "Installing %s %s...\n", binName, rel.TagName)
+	_, _ = fmt.Fprintf(progress, "Installing %s %s...\n", binName, rel.TagName)
 	if err := selfupdate.Apply(bytes.NewReader(bin), selfupdate.Options{}); err != nil {
 		if rerr := selfupdate.RollbackError(err); rerr != nil {
 			return fmt.Errorf("update failed and rollback failed (reinstall manually): %w", rerr)
@@ -195,7 +195,7 @@ func extractBinary(archive []byte, ext, binName string) ([]byte, error) {
 				if err != nil {
 					return nil, err
 				}
-				defer rc.Close()
+				defer func() { _ = rc.Close() }()
 				return io.ReadAll(io.LimitReader(rc, maxDownloadSize))
 			}
 		}
@@ -206,7 +206,7 @@ func extractBinary(archive []byte, ext, binName string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("reading update archive: %w", err)
 	}
-	defer gz.Close()
+	defer func() { _ = gz.Close() }()
 	tr := tar.NewReader(gz)
 	for {
 		hdr, err := tr.Next()

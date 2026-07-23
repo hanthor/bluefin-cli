@@ -48,7 +48,7 @@ type Theme struct {
 
 // Resolve returns the theme for the given terminal background.
 func Resolve(isDark bool) Theme {
-	var f catppuccin.Flavor = catppuccin.Latte
+	f := catppuccin.Latte
 	if isDark {
 		f = catppuccin.Mocha
 	}
