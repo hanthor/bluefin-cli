@@ -10,6 +10,53 @@
 * correct wallpaper command nesting and align tests with real command tree ([56c2bff](https://github.com/tuna-os/bluefin-cli/commit/56c2bff1a9a514d0c1e05825b403c44ea05a495a))
 * **deps:** update module charm.land/bubbles/v2 to v2.1.0 ([#54](https://github.com/tuna-os/bluefin-cli/issues/54)) ([feec7be](https://github.com/tuna-os/bluefin-cli/commit/feec7bebd22286abe8c91b8c2145d875236b120a))
 * **deps:** update module charm.land/bubbles/v2 to v2.1.1 ([#81](https://github.com/tuna-os/bluefin-cli/issues/81)) ([9835f81](https://github.com/tuna-os/bluefin-cli/commit/9835f8188d8b6ba2683632146dfa54c1a1edb85f))
+* **deps:** update module charm.land/bubbletea/v2 to v2.0.8 ([#87](https://github.com/tuna-os/bluefin-cli/issues/87)) ([884531c](https://github.com/tuna-os/bluefin-cli/commit/884531c7269d743b569f4d0b9de97cb0d40f6708))
+* **deps:** update module charm.land/lipgloss/v2 to v2.0.5 ([#82](https://github.com/tuna-os/bluefin-cli/issues/82)) ([ce5f5f7](https://github.com/tuna-os/bluefin-cli/commit/ce5f5f7cc009933ed9e2c91454ce317d765eabfb))
+* **deps:** update module golang.org/x/sys to v0.46.0 ([#55](https://github.com/tuna-os/bluefin-cli/issues/55)) ([cf9ab11](https://github.com/tuna-os/bluefin-cli/commit/cf9ab11fb28a7599e1a275ccd0ea6efdbfb103dc))
+* **deps:** update module golang.org/x/sys to v0.47.0 ([#83](https://github.com/tuna-os/bluefin-cli/issues/83)) ([a35ea5e](https://github.com/tuna-os/bluefin-cli/commit/a35ea5ea8c56f276320d1834d929a84eac250150))
+* **release:** per-build archives so winget/brew/scoop id filters match; TUI polish ([04ac971](https://github.com/tuna-os/bluefin-cli/commit/04ac9711ad4431f472d5fe5cd95c6e7ba87dfcb7))
+* **release:** repair delivery pipeline; add brew/scoop publishing, one-liner installs, and self-update ([b7818f2](https://github.com/tuna-os/bluefin-cli/commit/b7818f2bd2a132b3007fa52241b453eba4e315c7))
+* **tui:** faithful Chrome T-rex sprite + braille-width-proof alignment ([f0fd01d](https://github.com/tuna-os/bluefin-cli/commit/f0fd01d3ef83c95dc19848e56087826d521b05ed))
+* **tui:** make the dino visible — clear ground around sprite, bold, sprint dust ([ee663eb](https://github.com/tuna-os/bluefin-cli/commit/ee663eb68b47aa8ffe6a2f6f88c8b40fddf3b63f))
+* **tui:** width-proof forms + native package multiselect ([2d7fb8d](https://github.com/tuna-os/bluefin-cli/commit/2d7fb8d09ab6ceaa9cce57631f1b829535cdcb08))
+* update Go module path from hanthor to tuna-os ([#522](https://github.com/tuna-os/bluefin-cli/issues/522)) ([e9a7aab](https://github.com/tuna-os/bluefin-cli/commit/e9a7aabe49b3e35a3b01a0446dc5a2bb83dd7cbc))
+
+
+### Features
+
+* AUR publishing, deb/rpm/AUR install docs, canvas tests, game depth zones ([40e8204](https://github.com/tuna-os/bluefin-cli/commit/40e820465132a0196a75d5aafbf2cada43d3e7d0))
+* blur-pause animations, daily update check, doctor self-update check, ambient polish ([42808d8](https://github.com/tuna-os/bluefin-cli/commit/42808d86362e38d94b4c2540a12b0dd0edea7399))
+* checksum-verified self-update, update notifier, menu viewport, ranked fuzzy, CI smoke+gofmt gates ([2fc4b00](https://github.com/tuna-os/bluefin-cli/commit/2fc4b00acbc03ec69b3f02c80fddc7e575b9207b))
+* doctor command, catppuccin flavor selection, deb/rpm packages ([9b181b9](https://github.com/tuna-os/bluefin-cli/commit/9b181b943ffc72118f4d93d708abad9c35ff7780))
+* doctor in menu, runner spinner, richer filter, persistent high score, docs ([4634bcf](https://github.com/tuna-os/bluefin-cli/commit/4634bcf5fc53886122e0a9c2732da44f2f29f4d1))
+* embed wallpaper cask list instead of fetching via brew at runtime ([5ef4462](https://github.com/tuna-os/bluefin-cli/commit/5ef4462684db07f34b79b29e7a29c8dacb131c57))
+* per-category install menu, GoReleaser winget automation, drop bbrew ([#49](https://github.com/tuna-os/bluefin-cli/issues/49)) ([38dcdd3](https://github.com/tuna-os/bluefin-cli/commit/38dcdd330f3b1198bf6b0ff432198da967f60623))
+* **tui:** 16px dino, fish obstacle, scroll polish, palette update action, screen tests ([04777fa](https://github.com/tuna-os/bluefin-cli/commit/04777fad17c5e5e3f87215c896f2425e79393e4b)), closes [hi#score](https://github.com/hi/issues/score)
+* **tui:** dino runner easter egg + docs ([0ae8f8c](https://github.com/tuna-os/bluefin-cli/commit/0ae8f8c61a82fe7a283877104e75ed02c0a6814a))
+* **tui:** fully native menus — no more terminal handover ([4e9bade](https://github.com/tuna-os/bluefin-cli/commit/4e9baded9711a873e2c0cd09b8eb0aff9af08399))
+* **tui:** half-block pixel canvas — full-color 19x18 dino game ([7e01c20](https://github.com/tuna-os/bluefin-cli/commit/7e01c204043747e420d4314e4a0363d313536032)), closes [hi#definition](https://github.com/hi/issues/definition)
+* **tui:** native Status and Components screens ([82fd4ec](https://github.com/tuna-os/bluefin-cli/commit/82fd4eccca3eb9f1912a9f4c49b84d87d51476ab))
+* **tui:** persistent bubbletea v2 shell with palette, adaptive theming, and header dino ([e9eeaef](https://github.com/tuna-os/bluefin-cli/commit/e9eeaef23cdf51589288caaa26976b9f17a3e4d9))
+* **tui:** real raptor sprite — two-row braille render of the Chrome T-rex ([1d42afd](https://github.com/tuna-os/bluefin-cli/commit/1d42afd7d72329b25bf3a34d38d2c1e9dce715d1))
+* **tui:** reimagine menus as command deck — gradient wordmark, seafloor dino, card rows ([70dd02c](https://github.com/tuna-os/bluefin-cli/commit/70dd02cd5f677fd7c0de07c4fc51fdd217d1da96))
+
+
+### Performance Improvements
+
+* dramatically speed up PowerShell profile loading (~2900ms → ~140ms) ([da46508](https://github.com/tuna-os/bluefin-cli/commit/da4650857cffab81cd2b9ce37219382bafe72304))
+
+# [0.7.0](https://github.com/tuna-os/bluefin-cli/compare/v0.6.4...v0.7.0) (2026-07-23)
+
+
+### Bug Fixes
+
+* **ci:** indent Python code in justfile to avoid parser error ([6f0e54f](https://github.com/tuna-os/bluefin-cli/commit/6f0e54f180f4b540cae402938a347940a0851ba8))
+* **ci:** serialize Automated Release runs to stop tag-collision races ([#80](https://github.com/tuna-os/bluefin-cli/issues/80)) ([6541253](https://github.com/tuna-os/bluefin-cli/commit/6541253aac7a8b54dfca50acd9ecfe02aad43b2f)), closes [#78](https://github.com/tuna-os/bluefin-cli/issues/78)
+* **ci:** use single-line Python to avoid justfile parsing issues ([0e079dd](https://github.com/tuna-os/bluefin-cli/commit/0e079dd5bae32166ff0b383cbe21c004d9ce1890))
+* correct PowerShell array match logic in windows smoke check ([#58](https://github.com/tuna-os/bluefin-cli/issues/58)) ([afef3e8](https://github.com/tuna-os/bluefin-cli/commit/afef3e8264dda400db5e902b78ded54ae60be90e))
+* correct wallpaper command nesting and align tests with real command tree ([56c2bff](https://github.com/tuna-os/bluefin-cli/commit/56c2bff1a9a514d0c1e05825b403c44ea05a495a))
+* **deps:** update module charm.land/bubbles/v2 to v2.1.0 ([#54](https://github.com/tuna-os/bluefin-cli/issues/54)) ([feec7be](https://github.com/tuna-os/bluefin-cli/commit/feec7bebd22286abe8c91b8c2145d875236b120a))
+* **deps:** update module charm.land/bubbles/v2 to v2.1.1 ([#81](https://github.com/tuna-os/bluefin-cli/issues/81)) ([9835f81](https://github.com/tuna-os/bluefin-cli/commit/9835f8188d8b6ba2683632146dfa54c1a1edb85f))
 * **deps:** update module charm.land/lipgloss/v2 to v2.0.5 ([#82](https://github.com/tuna-os/bluefin-cli/issues/82)) ([ce5f5f7](https://github.com/tuna-os/bluefin-cli/commit/ce5f5f7cc009933ed9e2c91454ce317d765eabfb))
 * **deps:** update module golang.org/x/sys to v0.46.0 ([#55](https://github.com/tuna-os/bluefin-cli/issues/55)) ([cf9ab11](https://github.com/tuna-os/bluefin-cli/commit/cf9ab11fb28a7599e1a275ccd0ea6efdbfb103dc))
 * **deps:** update module golang.org/x/sys to v0.47.0 ([#83](https://github.com/tuna-os/bluefin-cli/issues/83)) ([a35ea5e](https://github.com/tuna-os/bluefin-cli/commit/a35ea5ea8c56f276320d1834d929a84eac250150))
