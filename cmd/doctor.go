@@ -3,7 +3,9 @@ package cmd
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -54,6 +56,7 @@ func doctorReport() (string, int) {
 		checkTools(),
 		checkNetwork(),
 		checkVersion(),
+		checkSelfUpdate(),
 	}
 
 	var b strings.Builder
@@ -119,6 +122,28 @@ func checkNetwork() checkResult {
 	}
 	_ = resp.Body.Close()
 	return checkResult{ok: true, name: "GitHub reachable"}
+}
+
+// checkSelfUpdate verifies a direct install can actually replace its own
+// binary (package-manager installs update through the manager instead).
+func checkSelfUpdate() checkResult {
+	if update.Detect() != update.MethodDirect {
+		return checkResult{ok: true, name: "Updates managed by " + string(update.Detect())}
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		return checkResult{name: "Self-update viable", warn: true, note: err.Error()}
+	}
+	dir := filepath.Dir(exe)
+	f, err := os.CreateTemp(dir, ".bluefin-doctor-*")
+	if err != nil {
+		return checkResult{name: "Self-update viable", warn: true,
+			note: dir + " is not writable — 'bluefin-cli update' would need elevated permissions"}
+	}
+	name := f.Name()
+	_ = f.Close()
+	_ = os.Remove(name)
+	return checkResult{ok: true, name: "Self-update viable (install dir writable)"}
 }
 
 func checkVersion() checkResult {

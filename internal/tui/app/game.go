@@ -115,8 +115,14 @@ type obstacle struct {
 	fly bool
 }
 
+// bubble is ambient decoration drifting up from the seafloor.
+type bubble struct {
+	x, y int
+}
+
 type GameScreen struct {
 	obstacles []obstacle
+	bubbles   []bubble
 	tick      int
 	score     int
 	best      int
@@ -241,6 +247,20 @@ func (g *GameScreen) advanceGame() {
 		g.obstacles = append(g.obstacles, obstacle{x: w - 1, fly: fly})
 	}
 
+	// Ambient bubbles drift up and pop at the surface.
+	nb := g.bubbles[:0]
+	for _, b := range g.bubbles {
+		b.y -= 1
+		b.x -= 1 // carried by the current
+		if b.y > 0 {
+			nb = append(nb, b)
+		}
+	}
+	g.bubbles = nb
+	if g.tick%5 == 0 && len(g.bubbles) < 12 {
+		g.bubbles = append(g.bubbles, bubble{x: rand.Intn(max(w, 1)), y: 1 << 20})
+	}
+
 	if g.collided() {
 		g.over = true
 		if g.score > g.best {
@@ -305,6 +325,15 @@ func (g *GameScreen) View(width, height int) string {
 		} else {
 			cv.Set(x, groundY+2, t.Surface)
 		}
+	}
+
+	// Ambient bubbles (spawned with a sentinel y; anchor them to the
+	// current seafloor once the canvas size is known).
+	for i := range g.bubbles {
+		if g.bubbles[i].y >= 1<<20 {
+			g.bubbles[i].y = groundY - 1
+		}
+		cv.Set(g.bubbles[i].x, g.bubbles[i].y, t.Overlay)
 	}
 
 	// Obstacles.

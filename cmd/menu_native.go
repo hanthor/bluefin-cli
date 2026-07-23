@@ -135,18 +135,22 @@ func wallpapersFlow() tea.Cmd {
 			if len(casks) == 0 {
 				return app.ToastMsg{Text: "No wallpaper casks found in ublue-os/tap.", IsErr: true}
 			}
-			return app.PushMsg{Screen: wallpapersFormScreen(casks)}
+			return app.PushMsg{Screen: wallpapersFormScreen(casks, install.InstalledCasks())}
 		},
 	)
 }
 
-func wallpapersFormScreen(casks []string) app.Screen {
+func wallpapersFormScreen(casks []string, installed map[string]bool) app.Screen {
 	var selected []string
 	build := func() *huh.Form {
 		selected = selected[:0]
 		opts := make([]huh.Option[string], 0, len(casks))
 		for _, c := range casks {
-			opts = append(opts, huh.NewOption(c, c))
+			label := c
+			if installed[c] {
+				label += " (installed)"
+			}
+			opts = append(opts, huh.NewOption(label, c))
 		}
 		return huh.NewForm(huh.NewGroup(
 			huh.NewMultiSelect[string]().

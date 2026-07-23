@@ -101,6 +101,7 @@ type Model struct {
 	toast     string
 	toastErr  bool
 	dino      dino
+	blurred   bool
 	quitting  bool
 	extraInit []tea.Cmd
 }
@@ -147,8 +148,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case dinoTickMsg:
+		if m.blurred {
+			// Terminal lost focus: stop animating (and burning battery);
+			// FocusMsg restarts the tick loop.
+			return m, nil
+		}
 		m.dino.advance(m.width)
 		return m, m.dino.tick()
+
+	case tea.BlurMsg:
+		m.blurred = true
+		return m, nil
+
+	case tea.FocusMsg:
+		if m.blurred {
+			m.blurred = false
+			return m, m.dino.tick()
+		}
+		return m, nil
 
 	case PushMsg:
 		m.stack = append(m.stack, msg.Screen)
@@ -253,6 +270,7 @@ func (m Model) View() tea.View {
 
 	view := tea.NewView(strings.Join([]string{header, body, footer}, "\n"))
 	view.BackgroundColor = t.Bg
+	view.ReportFocus = true
 	return view
 }
 
@@ -348,6 +366,9 @@ func globalHints(canGoBack bool) []KeyHint {
 	hints := []KeyHint{}
 	if canGoBack {
 		hints = append(hints, KeyHint{"esc/←", "back"})
+	}
+	if len(registry) > 0 {
+		hints = append(hints, KeyHint{"ctrl+p", "palette"})
 	}
 	hints = append(hints,
 		KeyHint{"?", "help"},

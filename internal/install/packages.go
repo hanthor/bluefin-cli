@@ -113,6 +113,20 @@ func MarkInstalled(pkgs []Package) []Package {
 	return markInstalledBrew(pkgs)
 }
 
+// InstalledCasks returns the set of installed Homebrew casks (short names);
+// empty on error or when brew is absent.
+func InstalledCasks() map[string]bool {
+	installed := make(map[string]bool)
+	out, err := exec.Command("brew", "list", "--cask").Output()
+	if err != nil {
+		return installed
+	}
+	for _, name := range strings.Fields(string(out)) {
+		installed[strings.TrimSpace(name)] = true
+	}
+	return installed
+}
+
 func markInstalledBrew(pkgs []Package) []Package {
 	installed := make(map[string]bool)
 	for _, args := range [][]string{{"list", "--formula"}, {"list", "--cask"}} {
