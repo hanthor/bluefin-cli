@@ -245,7 +245,7 @@ func advancedMenuScreen() app.Screen {
 			dark = "☀️  Dark Mode: Off"
 		}
 		return []app.MenuItem{
-			{Label: dark, Value: "toggle_dark", Desc: "Hint for legacy CLI output styling"},
+			{Label: dark, Value: "toggle_dark", Desc: "Color hint for plain CLI output"},
 			{Icon: "🎨", Label: "Flavor: " + viper.GetString("ui.flavor"), Value: "flavor",
 				Desc: "Cycle Catppuccin flavor (auto follows the terminal)"},
 		}

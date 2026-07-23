@@ -58,6 +58,14 @@ func checkForUpdate() tea.Msg {
 	return app.ToastMsg{Text: fmt.Sprintf("⬆ %s available — run: %s", rel.TagName, hint)}
 }
 
+// launchFlow opens the interactive shell and immediately runs flow — used
+// by commands like `bluefin-cli fonts` so every interactive path shares the
+// native TUI (esc leads back to the Home menu).
+func launchFlow(flow tea.Cmd) error {
+	registerPaletteActions()
+	return app.Run(mainMenuScreen(), flow, checkForUpdate)
+}
+
 func mainMenuScreen() app.Screen {
 	return app.NewMenu("Home", nil, mainMenuItems, mainMenuSelect)
 }

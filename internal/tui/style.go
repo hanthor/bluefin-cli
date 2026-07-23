@@ -1,11 +1,6 @@
 package tui
 
 import (
-	"fmt"
-	"os"
-	"os/exec"
-	"runtime"
-
 	"charm.land/bubbles/v2/key"
 	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
@@ -138,32 +133,4 @@ func ConfirmKeyMap() *huh.KeyMap {
 	)
 
 	return km
-}
-
-// ClearScreen clears the terminal screen
-func ClearScreen() {
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("cmd", "/c", "cls")
-	} else {
-		cmd = exec.Command("clear")
-	}
-	cmd.Stdout = os.Stdout
-	_ = cmd.Run()
-}
-
-// RenderHeader renders a consistent header for menus
-func RenderHeader(title string, subtitle string) {
-	fmt.Println(TitleStyle.Render(title))
-	if subtitle != "" {
-		fmt.Println(SubtitleStyle.Render(subtitle))
-	}
-	fmt.Println()
-}
-
-// Pause waits for user input before continuing
-func Pause() {
-	fmt.Println()
-	fmt.Println(lipgloss.NewStyle().Faint(true).Render("Press Enter to continue..."))
-	_, _ = fmt.Scanln()
 }

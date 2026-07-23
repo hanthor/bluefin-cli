@@ -2,17 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
-	"charm.land/huh/v2"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"github.com/tuna-os/bluefin-cli/internal/config"
 	"github.com/tuna-os/bluefin-cli/internal/env"
 	"github.com/tuna-os/bluefin-cli/internal/shell"
-	"github.com/tuna-os/bluefin-cli/internal/tui"
+	"github.com/tuna-os/bluefin-cli/internal/tui/app"
 )
 
 var shellCmd = &cobra.Command{
@@ -28,7 +23,7 @@ The Shell Experience provides:
 	Args: cobra.MaximumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
-			return runShellMenu()
+			return launchFlow(app.Push(shellMenuScreen()))
 		}
 
 		// Args provided
@@ -47,253 +42,8 @@ var shellConfigCmd = &cobra.Command{
 	Short: "Configure individual shell experience tools",
 	Long:  `Enable or disable specific shell experience components interactively.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return configureShellTools()
+		return launchFlow(app.Push(componentsFormScreen()))
 	},
-}
-
-func runShellMenu() error {
-	for {
-		tui.ClearScreen()
-		tui.RenderHeader("Bluefin CLI", "Main Menu > Shell")
-
-		currentShellPath := os.Getenv("SHELL")
-		currentShell := filepath.Base(currentShellPath)
-		if currentShell == "" || currentShell == "." {
-			if env.IsWindows() {
-				currentShell = "powershell"
-			} else {
-				currentShell = "bash"
-			}
-		}
-
-		status := shell.CheckStatus()
-		isEnabled := status[currentShell]
-		toggleLabel := fmt.Sprintf("🔄 Enable for current shell (%s)", currentShell)
-		if isEnabled {
-			toggleLabel = fmt.Sprintf("🔄 Disable for current shell (%s)", currentShell)
-		}
-
-		var action string
-		componentsLabel := "🔧 Configure Components ❯"
-		motdLabel := "📰 MOTD Settings ❯"
-		shellsLabel := "🐚 Other Shells ❯"
-		advancedLabel := "🎨 Advanced ❯"
-
-		if err := huh.NewForm(
-			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("Choose an option").
-					Options(
-						huh.NewOption(toggleLabel, "toggle_current"),
-						huh.NewOption(componentsLabel, "components"),
-						huh.NewOption(motdLabel, "motd"),
-						huh.NewOption(shellsLabel, "shells"),
-						huh.NewOption(advancedLabel, "advanced"),
-						huh.NewOption("Exit to Main Menu", "exit"),
-					).
-					Value(&action),
-			),
-		).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap()).Run(); err != nil {
-			return huh.ErrUserAborted
-		}
-
-		switch action {
-		case "toggle_current":
-			if err := shell.Toggle(currentShell, !isEnabled); err != nil {
-				return err
-			}
-			tui.Pause()
-		case "shells":
-			if err := shellShellsMenu(); err != nil {
-				return err
-			}
-		case "components":
-			if err := configureShellTools(); err != nil {
-				return err
-			}
-		case "motd":
-			if err := runMotdMenu(); err != nil {
-				return err
-			}
-		case "advanced":
-			if err := runAdvancedMenu(); err != nil {
-				return err
-			}
-		case "exit":
-			return nil
-		}
-	}
-}
-
-func shellShellsMenu() error {
-	tui.ClearScreen()
-	tui.RenderHeader("Bluefin CLI", "Main Menu > Shell > Shells")
-
-	status := shell.CheckStatus()
-	installedShells := shell.GetInstalledShells()
-
-	var selected []string
-	for _, s := range installedShells {
-		if status[s] {
-			selected = append(selected, s)
-		}
-	}
-
-	initialSelected := make(map[string]bool)
-	for _, sh := range selected {
-		initialSelected[sh] = true
-	}
-
-	// Build options dynamically based on installed shells
-	var options []huh.Option[string]
-	for _, s := range installedShells {
-		options = append(options, huh.NewOption(s, s))
-	}
-
-	if err := huh.NewForm(
-		huh.NewGroup(
-			huh.NewMultiSelect[string]().
-				Title("Manage other shells").
-				Description("Selected = ON, Deselected = OFF").
-				Options(options...).
-				Value(&selected),
-		),
-	).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap()).Run(); err != nil {
-		return huh.ErrUserAborted
-	}
-
-	finalSelected := make(map[string]bool)
-	for _, sh := range selected {
-		finalSelected[sh] = true
-	}
-
-	for _, shName := range installedShells {
-		wasEnabled := initialSelected[shName]
-		isEnabled := finalSelected[shName]
-
-		if wasEnabled != isEnabled {
-			if err := shell.Toggle(shName, isEnabled); err != nil {
-				return err
-			}
-			tui.Pause()
-		}
-	}
-	return nil
-}
-
-func configureShellTools() error {
-	tui.ClearScreen()
-	tui.RenderHeader("Bluefin CLI", "Main Menu > Shell > Components")
-
-	currentShellPath := os.Getenv("SHELL")
-	currentShell := filepath.Base(currentShellPath)
-	if currentShell == "" || currentShell == "." {
-		if env.IsWindows() {
-			currentShell = "powershell"
-		} else {
-			currentShell = "bash"
-		}
-	}
-
-	cfg, err := shell.LoadConfig(currentShell)
-	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
-	}
-
-	availableTools := shell.ToolsForShell(currentShell)
-
-	var selected []string
-	for _, tool := range availableTools {
-		if cfg.IsEnabled(tool.Name) {
-			selected = append(selected, tool.Name)
-		}
-	}
-
-	var options []huh.Option[string]
-	for _, tool := range availableTools {
-		label := fmt.Sprintf("%s (%s)", tool.Name, tool.Description)
-		options = append(options, huh.NewOption(label, tool.Name))
-	}
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewMultiSelect[string]().
-				Title("Select tools to enable").
-				Description("Uncheck to disable specific tools").
-				Options(options...).
-				Value(&selected),
-		),
-	).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
-
-	if err := form.Run(); err != nil {
-		if err == huh.ErrUserAborted {
-			return huh.ErrUserAborted
-		}
-		return fmt.Errorf("form error: %w", err)
-	}
-
-	newCfg := shell.DefaultConfig(currentShell)
-	selectedSet := make(map[string]bool)
-	for _, s := range selected {
-		selectedSet[s] = true
-	}
-
-	for _, tool := range availableTools {
-		newCfg.SetEnabled(tool.Name, selectedSet[tool.Name])
-	}
-
-	if err := shell.SaveConfig(newCfg); err != nil {
-		return fmt.Errorf("failed to save config: %w", err)
-	}
-
-	// Install any newly enabled tools
-	shell.InstallTools(currentShell, newCfg)
-
-	fmt.Println(tui.SuccessStyle.Render("Configuration saved! Tools installed/updated."))
-	tui.Pause()
-	return nil
-}
-
-func runAdvancedMenu() error {
-	tui.ClearScreen()
-	tui.RenderHeader("Bluefin CLI", "Main Menu > Shell > Advanced")
-
-	isDark := viper.GetBool("ui.dark_mode")
-	darkModeLabel := "🌙 Dark Mode: On"
-	if !isDark {
-		darkModeLabel = "☀️  Dark Mode: Off"
-	}
-
-	var action string
-	if err := huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Title("Advanced Settings").
-				Options(
-					huh.NewOption(darkModeLabel, "toggle_dark"),
-					huh.NewOption("Back", "exit"),
-				).
-				Value(&action),
-		),
-	).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap()).Run(); err != nil {
-		return huh.ErrUserAborted
-	}
-
-	if action == "toggle_dark" {
-		viper.Set("ui.dark_mode", !isDark)
-		if err := config.Save(); err != nil {
-			fmt.Println(tui.ErrorStyle.Render("Failed to save setting: " + err.Error()))
-			tui.Pause()
-		} else {
-			state := "Dark"
-			if isDark {
-				state = "Light"
-			}
-			fmt.Println(tui.SuccessStyle.Render("✓ Switched to " + state + " mode"))
-			tui.Pause()
-		}
-	}
-	return nil
 }
 
 func init() {
