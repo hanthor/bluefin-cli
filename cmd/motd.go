@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"charm.land/huh/v2"
 	"github.com/spf13/cobra"
 	"github.com/tuna-os/bluefin-cli/internal/motd"
+	"github.com/tuna-os/bluefin-cli/internal/shell"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
 	"github.com/tuna-os/bluefin-cli/internal/tui/app"
 )
@@ -35,7 +37,26 @@ var motdToggleCmd = &cobra.Command{
 			enable = args[1] == "on"
 		}
 
-		return motd.Toggle(target, enable)
+		targets := []string{target}
+		if target == "all" || target == "" {
+			targets = []string{"bash", "zsh", "fish"}
+		}
+		for _, sh := range targets {
+			cfg, err := shell.LoadConfig(sh)
+			if err != nil {
+				cfg = shell.DefaultConfig(sh)
+			}
+			cfg.SetEnabled("Motd", enable)
+			if err := shell.SaveConfig(cfg); err != nil {
+				return fmt.Errorf("saving %s config: %w", sh, err)
+			}
+		}
+		state := "disabled"
+		if enable {
+			state = "enabled"
+		}
+		fmt.Printf("MOTD %s for %s.\n", state, strings.Join(targets, ", "))
+		return nil
 	},
 }
 

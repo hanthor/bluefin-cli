@@ -58,6 +58,9 @@ jobs:
     - name: Run smoke suite
       run: ./scripts/tui-smoke.sh ./bluefin-cli-smoke
 
+    - name: Run TUI state suite
+      run: ./scripts/tui-state.sh ./bluefin-cli-smoke
+
   goreleaser-check:
     name: goreleaser config
     runs-on: ubuntu-latest

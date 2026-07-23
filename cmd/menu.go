@@ -142,17 +142,17 @@ func shellMenuScreen() app.Screen {
 	return app.NewMenu("Shell", nil, items, func(it app.MenuItem) tea.Cmd {
 		switch it.Value {
 		case "toggle_current":
+			// Toggling can trigger brew installs (e.g. bash-preexec), which
+			// print — so it must run in a RunnerScreen, never inline.
 			current := currentShellName()
 			enabled := shell.CheckStatus()[current]
-			return tea.Sequence(func() tea.Msg {
-				if err := shell.Toggle(current, !enabled); err != nil {
-					return app.ToastMsg{Text: "Error: " + err.Error(), IsErr: true}
-				}
-				if enabled {
-					return app.ToastMsg{Text: "Shell experience disabled for " + current + "."}
-				}
-				return app.ToastMsg{Text: "Shell experience enabled for " + current + "."}
-			}, app.ReloadTop())
+			verb := "Enabling"
+			if enabled {
+				verb = "Disabling"
+			}
+			return app.Push(app.NewRunner(verb+" "+current, func() error {
+				return shell.Toggle(current, !enabled)
+			}))
 		case "components":
 			return app.Push(componentsFormScreen())
 		case "motd":
