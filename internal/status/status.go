@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/viper"
+
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/term"
 	"github.com/tuna-os/bluefin-cli/internal/env"
@@ -40,6 +42,9 @@ func Show() error {
 	fmt.Println(out)
 	return nil
 }
+
+// AppVersion is stamped by cmd at startup so the report can show it.
+var AppVersion = "dev"
 
 // Render builds the status report for the given width. Two columns need
 // ~76 cells; narrower widths stack vertically so the columns can't overlap.
@@ -248,5 +253,7 @@ func Render(width int) (string, error) {
 		)
 	}
 
-	return titleStyle.Render("Bluefin CLI Status") + "\n\n" + formatted, nil
+	head := titleStyle.Render("Bluefin CLI Status") + "  " +
+		labelStyle.Render("v"+AppVersion+" · flavor "+viper.GetString("ui.flavor"))
+	return head + "\n\n" + formatted, nil
 }
