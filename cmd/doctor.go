@@ -51,6 +51,10 @@ func runDoctorFixes() {
 			fmt.Println("  failed: " + err.Error())
 		}
 	}
+	if env.IsAlpine() && !commandExists("coldbrew") {
+		fmt.Println("fix: setting up coldbrew")
+		shell.EnsureColdbrew()
+	}
 	for _, tool := range []string{"eza", "fzf", "starship"} {
 		if _, err := exec.LookPath(tool); err != nil {
 			fmt.Println("fix: installing " + tool)
@@ -184,8 +188,8 @@ func checkBrew() checkResult {
 		case commandExists("coldbrew"):
 			return checkResult{ok: true, name: "Package manager: coldbrew"}
 		case commandExists("apk"):
-			return checkResult{ok: true, name: "Package manager: apk",
-				note: "shell tool installs use 'sudo apk add' — passwordless sudo required"}
+			return checkResult{name: "Package manager: coldbrew not set up yet", warn: true,
+				note: "run 'bluefin-cli doctor --fix' to install it (rootless, sandboxed); falls back to 'sudo apk add' per package until then"}
 		default:
 			return checkResult{name: "Package manager", warn: true,
 				note: "neither coldbrew nor apk found — shell tool installs will be skipped"}
