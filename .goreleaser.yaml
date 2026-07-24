@@ -175,11 +175,18 @@ winget:
     # Skip until the WINGET_TOKEN secret is configured, so a missing token
     # can't fail the release.
     skip_upload: '{{ if envOrDefault "WINGET_TOKEN" "" }}auto{{ else }}true{{ end }}'
+    # Submissions to microsoft/winget-pkgs must come from a fork: goreleaser
+    # pushes the manifest branch to the token owner's fork and opens the PR
+    # against upstream (direct branch creation 403s — failed v0.8.0's pipe).
     repository:
-      owner: microsoft
+      owner: hanthor
       name: winget-pkgs
       branch: "bluefin-cli-{{.Version}}"
       token: "{{ .Env.WINGET_TOKEN }}"
       pull_request:
         enabled: true
         draft: false
+        base:
+          owner: microsoft
+          name: winget-pkgs
+          branch: master
