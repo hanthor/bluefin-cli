@@ -298,16 +298,15 @@ func fuzzyScore(haystack, needle string) (int, bool) {
 	if needle == "" {
 		return 0, true
 	}
-	i, first, last := 0, -1, -1
+	i, first := 0, -1
 	for pos, r := range haystack {
 		if rune(needle[i]) == r {
 			if first < 0 {
 				first = pos
 			}
-			last = pos
 			i++
 			if i == len(needle) {
-				score := -(last - first) - first
+				score := -(pos - first) - first
 				if first == 0 {
 					score += 100
 				}

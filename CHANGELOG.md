@@ -1,4 +1,11 @@
-# [0.7.0](https://github.com/tuna-os/bluefin-cli/compare/v0.6.4...v0.7.0) (2026-07-23)
+# Changelog
+
+Release notes for v0.7.1 and later live on
+[GitHub Releases](https://github.com/tuna-os/bluefin-cli/releases) —
+main is protected by required status checks, so the release bot no longer
+commits changelog entries back to the repo.
+
+[0.7.0](https://github.com/tuna-os/bluefin-cli/compare/v0.6.4...v0.7.0) (2026-07-23)
 
 
 ### Bug Fixes

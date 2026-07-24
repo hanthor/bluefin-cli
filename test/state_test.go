@@ -215,3 +215,149 @@ func TestProfileRoundTripRestoresState(t *testing.T) {
 	mustRun("shell", "bash", "off")
 	mustRun("theme", "auto")
 }
+
+// TestDoctorFixReachesState: --fix must actually enable shell integration,
+// and the subsequent report must agree.
+func TestDoctorFixReachesState(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix shells only")
+	}
+	rc := filepath.Join(os.Getenv("HOME"), ".bashrc")
+	if err := os.WriteFile(rc, []byte("# base\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// doctor exit code is nonzero when hard failures remain (e.g. no
+	// network in a sandbox), so assert on state, not on the exit code.
+	cmd := commandWithEnv(t, []string{"SHELL=/bin/bash"}, "doctor", "--fix")
+	out, _ := cmd.CombinedOutput()
+
+	if !fileContains(t, rc, "bluefin-cli init") {
+		t.Errorf("doctor --fix did not enable shell integration:\n%s", out)
+	}
+	if !strings.Contains(string(out), "Shell integration enabled (bash)") {
+		t.Errorf("doctor report disagrees with the fix it just applied:\n%s", out)
+	}
+
+	// Tidy the sandbox.
+	if _, err := runCommand(t, "shell", "bash", "off"); err != nil {
+		t.Fatalf("cleanup failed: %v", err)
+	}
+}
+
+// TestCustomBundleInstall: a user Brewfile in the config dir becomes an
+// installable bundle whose packages actually reach brew.
+func TestCustomBundleInstall(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("brew path is unix-only")
+	}
+	home := os.Getenv("HOME")
+	dir := filepath.Join(home, ".config", "bluefin-cli", "bundles")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "mystuff.Brewfile"), []byte("brew \"cowsay\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+
+	fakeBin := t.TempDir()
+	log := filepath.Join(fakeBin, "brew.log")
+	stub := fmt.Sprintf("#!/bin/sh\necho \"$@\" >> %[1]s\nfor a in \"$@\"; do case \"$a\" in --file=*) cat \"${a#--file=}\" >> %[1]s ;; esac; done\nexit 0\n", log)
+	if err := os.WriteFile(filepath.Join(fakeBin, "brew"), []byte(stub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := commandWithEnv(t, []string{
+		"PATH=" + fakeBin + string(os.PathListSeparator) + os.Getenv("PATH"),
+	}, "install", "mystuff")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("install mystuff failed: %v\n%s", err, out)
+	}
+	logged, _ := os.ReadFile(log)
+	if !strings.Contains(string(logged), `brew "cowsay"`) {
+		t.Errorf("custom bundle content never reached brew:\n%s", logged)
+	}
+}
+
+// TestBrewfileEditRoundTrip: add/list/remove must actually edit the file,
+// idempotently, preserving unrelated content.
+func TestBrewfileEditRoundTrip(t *testing.T) {
+	bf := filepath.Join(os.Getenv("HOME"), "Brewfile")
+	if err := os.WriteFile(bf, []byte("# my machine\ntap \"homebrew/core\"\nbrew \"jq\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(bf) })
+
+	mustRun := func(args ...string) string {
+		t.Helper()
+		out, err := runCommand(t, args...)
+		if err != nil {
+			t.Fatalf("%v failed: %v\n%s", args, err, out)
+		}
+		return out
+	}
+
+	mustRun("brewfile", "add", "cowsay")
+	mustRun("brewfile", "add", "wezterm", "--kind", "cask")
+	mustRun("brewfile", "add", "Microsoft.VisualStudioCode", "--kind", "winget")
+	if !fileContains(t, bf, `brew "cowsay"`) || !fileContains(t, bf, `cask "wezterm"`) ||
+		!fileContains(t, bf, `winget "Microsoft.VisualStudioCode"`) {
+		data, _ := os.ReadFile(bf)
+		t.Fatalf("add did not write entries:\n%s", data)
+	}
+
+	// Idempotent add.
+	mustRun("brewfile", "add", "cowsay")
+	data, _ := os.ReadFile(bf)
+	if strings.Count(string(data), `brew "cowsay"`) != 1 {
+		t.Error("duplicate entry after re-add")
+	}
+
+	list := mustRun("brewfile", "list")
+	for _, want := range []string{"cowsay", "wezterm", "Microsoft.VisualStudioCode", "jq"} {
+		if !strings.Contains(list, want) {
+			t.Errorf("list missing %s:\n%s", want, list)
+		}
+	}
+
+	mustRun("brewfile", "remove", "cowsay", "wezterm")
+	if fileContains(t, bf, "cowsay") || fileContains(t, bf, "wezterm") {
+		t.Error("remove left entries behind")
+	}
+	// Unrelated lines survive the edits.
+	if !fileContains(t, bf, "# my machine") || !fileContains(t, bf, `tap "homebrew/core"`) || !fileContains(t, bf, `brew "jq"`) {
+		t.Error("edits damaged unrelated content")
+	}
+}
+
+// TestBrewfileInstallAllReachesBrew: 'brewfile install' must hand the file
+// to brew bundle.
+func TestBrewfileInstallAllReachesBrew(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("brew path is unix-only")
+	}
+	bf := filepath.Join(os.Getenv("HOME"), "Brewfile")
+	if err := os.WriteFile(bf, []byte("brew \"cowsay\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(bf) })
+
+	fakeBin := t.TempDir()
+	log := filepath.Join(fakeBin, "brew.log")
+	stub := fmt.Sprintf("#!/bin/sh\necho \"$@\" >> %s\nexit 0\n", log)
+	if err := os.WriteFile(filepath.Join(fakeBin, "brew"), []byte(stub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cmd := commandWithEnv(t, []string{
+		"PATH=" + fakeBin + string(os.PathListSeparator) + os.Getenv("PATH"),
+	}, "brewfile", "install")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("brewfile install failed: %v\n%s", err, out)
+	}
+	logged, _ := os.ReadFile(log)
+	if !strings.Contains(string(logged), "bundle install --file="+bf) {
+		t.Errorf("brew bundle not invoked on the home Brewfile:\n%s", logged)
+	}
+}

@@ -90,6 +90,7 @@ func mainMenuItems() []app.MenuItem {
 		{Icon: "🩺", Label: "Doctor", Value: "doctor", Desc: "Diagnose setup problems with fix hints"},
 		{Icon: "🐚", Label: "Bluefin Shell", Value: "shell", Desc: "Aliases, prompt, and modern CLI tools", Hint: shellHint, Submenu: true},
 		{Icon: "📦", Label: "Install Apps", Value: "bundles", Desc: "Curated tool bundles", Submenu: true},
+		{Icon: "👻", Label: "Terminal Setup", Value: "terminal", Desc: "Ghostty install, Dock pin, themed config", Submenu: true},
 	}
 	items = append(items, extraMenuItems()...)
 	items = append(items, app.MenuItem{Icon: "👋", Label: "Exit", Value: "exit", Desc: "Back to your shell"})
@@ -106,6 +107,8 @@ func mainMenuSelect(it app.MenuItem) tea.Cmd {
 		return app.Push(shellMenuScreen())
 	case "bundles":
 		return app.Push(bundlesMenuScreen())
+	case "terminal":
+		return app.Push(terminalMenuScreen())
 	case "exit":
 		return app.Pop()
 	default:
@@ -241,9 +244,180 @@ func bundlesMenuScreen() app.Screen {
 		}
 		return out
 	}
-	return app.NewMenu("Install Apps", nil, items, func(it app.MenuItem) tea.Cmd {
+	withCustom := func() []app.MenuItem {
+		out := items()
+		for _, name := range install.CustomBundles() {
+			path, err := install.CustomBundlePath(name)
+			if err != nil {
+				continue
+			}
+			out = append(out, app.MenuItem{Icon: "🧰", Label: name, Value: "file:" + path,
+				Desc: "Your bundle (~/.config/bluefin-cli/bundles)", Submenu: true})
+		}
+		// The `brew bundle` convention: the home Brewfile is a first-class
+		// managed entity (create it from installed packages if absent).
+		hb := install.HomeBrewfile()
+		if _, err := os.Stat(hb); err == nil {
+			out = append(out, app.MenuItem{Icon: "🏠", Label: "My Brewfile", Value: "mybrewfile",
+				Desc: "Install, add, and remove entries in " + hb, Submenu: true})
+		} else {
+			out = append(out, app.MenuItem{Icon: "🏠", Label: "Create My Brewfile", Value: "dump",
+				Desc: "Capture installed packages into " + hb})
+		}
+		return out
+	}
+	return app.NewMenu("Install Apps", nil, withCustom, func(it app.MenuItem) tea.Cmd {
+		if path, ok := strings.CutPrefix(it.Value, "file:"); ok {
+			return brewfileFlow(path, it.Label)
+		}
+		switch it.Value {
+		case "mybrewfile":
+			return app.Push(myBrewfileScreen())
+		case "dump":
+			return app.Push(app.NewRunner("Capturing installed packages", func() error {
+				return install.DumpBrewfile(install.HomeBrewfile())
+			}))
+		}
 		return packagesFlow(it.Value, it.Label)
 	})
+}
+
+// myBrewfileScreen manages the home Brewfile: install all, per-package
+// multiselect, add entries, remove entries, re-capture from installed.
+func myBrewfileScreen() app.Screen {
+	path := install.HomeBrewfile()
+	items := func() []app.MenuItem {
+		n := 0
+		if pkgs, err := install.GetBrewfilePackages(path); err == nil {
+			n = len(pkgs)
+		}
+		return []app.MenuItem{
+			{Icon: "📥", Label: "Install everything", Value: "all", Desc: fmt.Sprintf("Apply all %d entries with one command", n)},
+			{Icon: "🎛", Label: "Manage packages", Value: "manage", Desc: "Pick installs and removals individually", Submenu: true},
+			{Icon: "➕", Label: "Add a package", Value: "add", Desc: "Append a formula or cask entry", Submenu: true},
+			{Icon: "➖", Label: "Remove entries", Value: "remove", Desc: "Delete entries from the file", Submenu: true},
+			{Icon: "📸", Label: "Re-capture from installed", Value: "dump", Desc: "Overwrite with what's installed now (brew bundle dump)"},
+		}
+	}
+	return app.NewMenu("My Brewfile", nil, items, func(it app.MenuItem) tea.Cmd {
+		switch it.Value {
+		case "all":
+			return app.Push(app.NewRunner("Installing Brewfile", func() error {
+				return install.InstallBrewfileAll(path)
+			}))
+		case "manage":
+			return brewfileFlow(path, "My Brewfile")
+		case "add":
+			return app.Push(brewfileAddScreen(path))
+		case "remove":
+			return app.Push(brewfileRemoveScreen(path))
+		case "dump":
+			return app.Push(app.NewRunner("Capturing installed packages", func() error {
+				return install.DumpBrewfile(path)
+			}))
+		}
+		return nil
+	})
+}
+
+// brewfileAddScreen searches every package manager on this platform and
+// adds the picked result to the Brewfile — type, search, choose.
+func brewfileAddScreen(path string) app.Screen {
+	var query string
+	build := func() *huh.Form {
+		query = ""
+		return huh.NewForm(huh.NewGroup(
+			huh.NewInput().
+				Title("Search packages").
+				Description("Searches brew formulae & casks (winget/scoop/choco on Windows)").
+				Placeholder("e.g. ripgrep").
+				Value(&query),
+		)).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
+	}
+	return app.NewForm("Add Package", build, func(aborted bool) tea.Cmd {
+		q := strings.TrimSpace(query)
+		if aborted || q == "" {
+			return nil
+		}
+		return tea.Batch(
+			app.Toast("Searching for "+q+"…", false),
+			func() tea.Msg {
+				results := install.SearchPackages(q)
+				if len(results) == 0 {
+					return app.ToastMsg{Text: "No packages found for " + q + ".", IsErr: true}
+				}
+				items := make([]app.MenuItem, 0, len(results))
+				for _, p := range results {
+					desc := p.Kind
+					if p.Name != "" && p.Name != p.ID {
+						desc = p.Name + " · " + p.Kind
+					}
+					items = append(items, app.MenuItem{Label: p.ID, Value: p.Kind + ":" + p.ID, Desc: desc})
+				}
+				menu := app.NewMenu("Results", items, nil, func(it app.MenuItem) tea.Cmd {
+					kind, name, _ := strings.Cut(it.Value, ":")
+					return tea.Sequence(func() tea.Msg {
+						if err := install.AddToBrewfile(path, name, kind); err != nil {
+							return app.ToastMsg{Text: "Error: " + err.Error(), IsErr: true}
+						}
+						return app.ToastMsg{Text: fmt.Sprintf("Added %s %q — Install everything to apply.", kind, name)}
+					}, app.Pop())
+				})
+				return app.PushMsg{Screen: menu}
+			},
+		)
+	})
+}
+
+func brewfileRemoveScreen(path string) app.Screen {
+	var picked []string
+	build := func() *huh.Form {
+		picked = picked[:0]
+		pkgs, _ := install.GetBrewfilePackages(path)
+		opts := make([]huh.Option[string], 0, len(pkgs))
+		for _, p := range pkgs {
+			opts = append(opts, huh.NewOption(fmt.Sprintf("%s (%s)", p.ID, p.Kind), p.ID))
+		}
+		return huh.NewForm(huh.NewGroup(
+			huh.NewMultiSelect[string]().
+				Title("Remove from Brewfile").
+				Description("Space marks entries for removal; enter confirms.").
+				Options(opts...).
+				Value(&picked),
+		)).WithTheme(tui.AppTheme).WithKeyMap(tui.MenuKeyMap())
+	}
+	return app.NewForm("Remove Entries", build, func(aborted bool) tea.Cmd {
+		if aborted || len(picked) == 0 {
+			return nil
+		}
+		names := append([]string(nil), picked...)
+		return func() tea.Msg {
+			if err := install.RemoveFromBrewfile(path, names); err != nil {
+				return app.ToastMsg{Text: "Error: " + err.Error(), IsErr: true}
+			}
+			return app.ToastMsg{Text: fmt.Sprintf("Removed %d entr%s from the Brewfile.", len(names), map[bool]string{true: "y", false: "ies"}[len(names) == 1])}
+		}
+	})
+}
+
+// brewfileFlow opens any on-disk Brewfile as a managed multiselect —
+// installed packages pre-checked, uncheck to uninstall, same diff+confirm
+// flow as the curated bundles.
+func brewfileFlow(path, label string) tea.Cmd {
+	return tea.Batch(
+		app.Toast("Reading "+label+"…", false),
+		func() tea.Msg {
+			pkgs, err := install.GetBrewfilePackages(path)
+			if err != nil {
+				return app.ToastMsg{Text: "Error: " + err.Error(), IsErr: true}
+			}
+			if len(pkgs) == 0 {
+				return app.ToastMsg{Text: label + " has no brew/cask entries.", IsErr: true}
+			}
+			pkgs = install.MarkInstalled(pkgs)
+			return app.PushMsg{Screen: packagesFormScreen(label, pkgs)}
+		},
+	)
 }
 
 // packagesFlow loads a bundle in the background (the menu stays live), then
@@ -356,6 +530,10 @@ func registerPaletteActions() {
 		app.Register(app.Action{
 			ID: "doctor", Icon: "🩺", Label: "Doctor", Section: "Home",
 			Do: func() tea.Cmd { return doctorScreenCmd() },
+		})
+		app.Register(app.Action{
+			ID: "terminal", Icon: "👻", Label: "Terminal Setup", Section: "Home",
+			Do: func() tea.Cmd { return app.Push(terminalMenuScreen()) },
 		})
 		app.Register(app.Action{
 			ID: "update", Icon: "⬆", Label: "Check for Updates", Section: "Home",

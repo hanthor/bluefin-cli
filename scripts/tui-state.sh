@@ -18,15 +18,39 @@ fail=0
 ok()   { echo "ok   $1"; }
 bad()  { echo "FAIL $1"; fail=1; }
 
+# wait_for <pattern> <seconds>: poll the pane until the pattern appears.
+wait_for() {
+  n=0
+  while [ $n -lt $(( $2 * 2 )) ]; do
+    tmux capture-pane -t "$SESSION" -p | grep -Eq "$1" && return 0
+    sleep 0.5; n=$((n+1))
+  done
+  return 1
+}
+
+# wait_runner <seconds>: wait until the RunnerScreen reports done or error
+# (durations vary with brew state on the host; file assertions come after).
+wait_runner() { wait_for "✓ done|✗ " "$1"; }
+
 tmux new-session -d -s "$SESSION" -x 100 -y 28
 tmux send-keys -t "$SESSION" "env HOME=$H SHELL=/bin/bash TERM=xterm-256color $BIN menu" Enter
-sleep 2
+n=0
+until tmux capture-pane -t "$SESSION" -p 2>/dev/null | grep -q "Bluefin CLI"; do
+  n=$((n+1)); [ $n -gt 30 ] && { echo "FAIL app did not start"; exit 1; }
+  sleep 0.5
+done
+sleep 0.5
 
-# Home -> Bluefin Shell (Status, Doctor, Shell) -> toggle current shell on.
-tmux send-keys -t "$SESSION" j; sleep 0.2
-tmux send-keys -t "$SESSION" j; sleep 0.2
-tmux send-keys -t "$SESSION" Enter; sleep 1
-tmux send-keys -t "$SESSION" Enter; sleep 3   # runner: "Enabling bash"
+# Home -> Bluefin Shell. Navigate by filter, not cursor position: under
+# load, timed keystrokes desync and land on the wrong row.
+tmux send-keys -t "$SESSION" /; sleep 0.3
+tmux send-keys -t "$SESSION" b l u e f i n Space s h e l l; sleep 0.5
+tmux send-keys -t "$SESSION" Enter
+wait_for "› Shell" 15 || bad "did not reach the Shell submenu"
+wait_for "Enable for current shell" 10 || bad "shell menu did not render"
+tmux send-keys -t "$SESSION" Enter            # runner: "Enabling bash"
+wait_for "Enabling bash" 10 || bad "toggle runner did not open"
+wait_runner 300 || bad "enable runner did not finish"
 tmux send-keys -t "$SESSION" Escape; sleep 0.6
 
 grep -q "bluefin-cli init" "$H/.bashrc" \
@@ -39,7 +63,10 @@ tmux capture-pane -t "$SESSION" -p | grep -q "Disable for current shell" \
   || bad "menu label did not refresh after toggle"
 
 # Toggle back off and verify the line is gone but the base content survives.
-tmux send-keys -t "$SESSION" Enter; sleep 3
+wait_for "Disable for current shell" 10 || bad "label did not flip to Disable"
+tmux send-keys -t "$SESSION" Enter
+wait_for "Disabling bash" 10 || bad "disable runner did not open"
+wait_runner 300 || bad "disable runner did not finish"
 tmux send-keys -t "$SESSION" Escape; sleep 0.6
 grep -q "bluefin-cli init" "$H/.bashrc" \
   && bad "TUI disable left the init line behind" \
@@ -49,9 +76,10 @@ grep -q "# base" "$H/.bashrc" \
   || bad "round trip destroyed pre-existing rc content"
 
 # MOTD toggle through the TUI must land in the shell config JSON.
-tmux send-keys -t "$SESSION" j; sleep 0.2   # Components
-tmux send-keys -t "$SESSION" j; sleep 0.2   # MOTD
-tmux send-keys -t "$SESSION" Enter; sleep 1
+tmux send-keys -t "$SESSION" /; sleep 0.3
+tmux send-keys -t "$SESSION" m o t d; sleep 0.5
+tmux send-keys -t "$SESSION" Enter
+wait_for "› MOTD" 10 || bad "did not reach the MOTD submenu"
 tmux send-keys -t "$SESSION" Enter; sleep 1.5  # toggle MOTD
 if grep -qi '"Motd"' "$H"/.config/bluefin-cli/*.json 2>/dev/null; then
   ok "TUI MOTD toggle persisted to shell config"

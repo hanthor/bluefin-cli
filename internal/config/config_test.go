@@ -74,9 +74,17 @@ func TestInit_EnvKeyReplace(t *testing.T) {
 
 // ── GetConfigDir tests ───────────────────────────────────────────────────────
 
+// setTestHome points the process home at dir on every platform:
+// os.UserHomeDir consults HOME on unix and USERPROFILE on Windows.
+func setTestHome(t *testing.T, dir string) {
+	t.Helper()
+	t.Setenv("HOME", dir)
+	t.Setenv("USERPROFILE", dir)
+}
+
 func TestGetConfigDir(t *testing.T) {
 	tmpHome := t.TempDir()
-	t.Setenv("HOME", tmpHome)
+	setTestHome(t, tmpHome)
 
 	dir, err := GetConfigDir()
 	if err != nil {
@@ -95,7 +103,7 @@ func TestSave_CreatesDefaultConfig(t *testing.T) {
 	viper.Reset()
 	t.Cleanup(viper.Reset)
 	tmpHome := t.TempDir()
-	t.Setenv("HOME", tmpHome)
+	setTestHome(t, tmpHome)
 
 	if err := Init(); err != nil {
 		t.Fatalf("Init() failed: %v", err)
@@ -129,7 +137,7 @@ func TestSave_CreatesConfigDir(t *testing.T) {
 	t.Cleanup(viper.Reset)
 	// When config dir doesn't exist, Save() should create it
 	tmpHome := t.TempDir()
-	t.Setenv("HOME", tmpHome)
+	setTestHome(t, tmpHome)
 
 	if err := Init(); err != nil {
 		t.Fatalf("Init() failed: %v", err)
@@ -153,7 +161,7 @@ func TestSave_PreservesExistingValues(t *testing.T) {
 	viper.Reset()
 	t.Cleanup(viper.Reset)
 	tmpHome := t.TempDir()
-	t.Setenv("HOME", tmpHome)
+	setTestHome(t, tmpHome)
 
 	if err := Init(); err != nil {
 		t.Fatalf("Init() failed: %v", err)
@@ -185,7 +193,7 @@ func TestSave_PreservesExistingValues(t *testing.T) {
 func TestInit_MissingConfigFile(t *testing.T) {
 	// Init should not error when no config file exists (defaults should be used)
 	tmpHome := t.TempDir()
-	t.Setenv("HOME", tmpHome)
+	setTestHome(t, tmpHome)
 
 	if err := Init(); err != nil {
 		t.Fatalf("Init() should not error when no config file exists: %v", err)
@@ -198,8 +206,9 @@ func TestInit_MissingConfigFile(t *testing.T) {
 }
 
 func TestGetConfigDir_NoHome(t *testing.T) {
-	// Unsetting HOME should cause GetConfigDir to error
+	// Unsetting the home env should cause GetConfigDir to error
 	t.Setenv("HOME", "")
+	t.Setenv("USERPROFILE", "")
 
 	_, err := GetConfigDir()
 	if err == nil {

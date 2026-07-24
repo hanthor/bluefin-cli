@@ -25,10 +25,11 @@ the shell resumes) — they are candidates for native-screen migration.
 ```mermaid
 graph TD
     Home[Home] --> Status["📊 Status (native scrollable view)"]
-    Home --> Doctor["🩺 Doctor (native diagnostics)"]
+    Home --> Doctor["🩺 Doctor (native diagnostics, --fix/--bench via CLI)"]
+    Home --> Terminal["👻 Terminal Setup (Ghostty/WezTerm: install, Dock pin, themed config)"]
     Home --> Shell[🐚 Bluefin Shell]
     Home --> Install[📦 Install Apps]
-    Home --> Wallpapers["🖼 Wallpapers (native multiselect)"]
+    Home --> Wallpapers["🖼 Wallpapers (install collections + set wallpaper on macOS/GNOME/Windows)"]
     Home --> Fonts["🔤 Fonts (native multiselect)"]
     Home --> Starship["🚀 Starship Theme (native select)"]
     Home --> Sunset["🌇 Sunset Switching (plus build, WSL/Windows only)"]
@@ -49,6 +50,7 @@ graph TD
     Install --> Gnome["🐧 Full GNOME Desktop (Linux+GNOME only)"]
 
     AI --> Pkg["Per-category package multiselect (native):\ninstalled pre-checked, diff → confirm → runner"]
+    Install --> MyBrew["🏠 My Brewfile: install all, manage, add via\ncross-manager search, remove, dump"]
 ```
 
 The `ctrl+p` palette lists every leaf destination above (Status, each install
@@ -83,5 +85,14 @@ Three layers, run by CI and `just` recipes:
 - `bluefin-cli update` — self-update for script installs, now verified
   against the release's `checksums.txt`; the menu also checks for updates in
   the background and shows a toast.
-- 🦕 **Dino Run** — hidden runner mini-game: `ctrl+p` → "Dino Run", or the
-  hidden `bluefin-cli dino` command. Space jumps, r restarts.
+- 🦕 **Dino Run** — hidden runner mini-game on the half-block pixel canvas:
+  `ctrl+p` → "Dino Run", or the hidden `bluefin-cli dino` command. Space
+  jumps kelp, stay down under fish; high score persists.
+- 👻 **Terminal Setup** — install the platform's best terminal (Ghostty on
+  macOS/Linux via brew, WezTerm on Windows via winget), pin to the macOS
+  Dock, and write a Catppuccin auto light/dark config with your Nerd Font.
+- 🏠 **My Brewfile** — one package file for every OS (brew/cask +
+  winget/scoop/choco): dump from installed, search-to-add across managers,
+  remove entries, install everything. Also `bluefin-cli brewfile`.
+- 📦 **Profiles** — `profile export/import/diff/push/pull` replay a whole
+  setup (shells, tools, flavor) across machines, synced via a private gist.

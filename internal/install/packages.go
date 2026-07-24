@@ -28,6 +28,16 @@ func GetBundlePackages(bundleName string) ([]Package, error) {
 	return getUnixBundlePackages(bundleName)
 }
 
+// GetBrewfilePackages parses any Brewfile on disk into packages (brew and
+// cask lines), for user Brewfiles and custom bundles.
+func GetBrewfilePackages(path string) ([]Package, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", path, err)
+	}
+	return parseBrewfileBytes(data), nil
+}
+
 func getUnixBundlePackages(bundleName string) ([]Package, error) {
 	bundle, ok := bundles[bundleName]
 	if !ok {
@@ -72,11 +82,18 @@ func parseBrewfileBytes(data []byte) []Package {
 			continue
 		}
 		var kind string
-		if strings.HasPrefix(line, "brew ") {
+		switch {
+		case strings.HasPrefix(line, "brew "):
 			kind = "brew"
-		} else if strings.HasPrefix(line, "cask ") {
+		case strings.HasPrefix(line, "cask "):
 			kind = "cask"
-		} else {
+		case strings.HasPrefix(line, "winget "):
+			kind = "winget"
+		case strings.HasPrefix(line, "scoop "):
+			kind = "scoop"
+		case strings.HasPrefix(line, "choco "):
+			kind = "choco"
+		default:
 			continue
 		}
 		name := extractQuotedName(line)

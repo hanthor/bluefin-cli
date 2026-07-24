@@ -7,6 +7,7 @@ package cmd
 
 import (
 	"fmt"
+	"path/filepath"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
@@ -19,6 +20,7 @@ import (
 	"github.com/tuna-os/bluefin-cli/internal/tui"
 	"github.com/tuna-os/bluefin-cli/internal/tui/app"
 	"github.com/tuna-os/bluefin-cli/internal/tui/theme"
+	"github.com/tuna-os/bluefin-cli/internal/wallpaper"
 )
 
 // --- Shell submenu -----------------------------------------------------
@@ -125,6 +127,24 @@ func shellsFormScreen() app.Screen {
 // --- Extras ------------------------------------------------------------
 
 func wallpapersFlow() tea.Cmd {
+	items := []app.MenuItem{
+		{Icon: "📥", Label: "Install collections", Value: "install", Desc: "Curated wallpaper packs via Homebrew", Submenu: true},
+	}
+	if wallpaper.Supported() {
+		items = append(items, app.MenuItem{Icon: "🖼", Label: "Set wallpaper", Value: "set", Desc: "Pick an image and apply it to the desktop", Submenu: true})
+	}
+	return app.Push(app.NewMenu("Wallpapers", items, nil, func(it app.MenuItem) tea.Cmd {
+		switch it.Value {
+		case "install":
+			return installWallpapersFlow()
+		case "set":
+			return setWallpaperFlow()
+		}
+		return nil
+	}))
+}
+
+func installWallpapersFlow() tea.Cmd {
 	return tea.Batch(
 		app.Toast("Loading wallpapers…", false),
 		func() tea.Msg {
@@ -136,6 +156,38 @@ func wallpapersFlow() tea.Cmd {
 				return app.ToastMsg{Text: "No wallpaper casks found in ublue-os/tap.", IsErr: true}
 			}
 			return app.PushMsg{Screen: wallpapersFormScreen(casks, install.InstalledCasks())}
+		},
+	)
+}
+
+// setWallpaperFlow lists installed images (collections, backgrounds dirs)
+// and applies the chosen one natively.
+func setWallpaperFlow() tea.Cmd {
+	return tea.Batch(
+		app.Toast("Scanning for images…", false),
+		func() tea.Msg {
+			imgs := wallpaper.List()
+			if len(imgs) == 0 {
+				return app.ToastMsg{Text: "No images found — install a collection first.", IsErr: true}
+			}
+			items := make([]app.MenuItem, 0, len(imgs))
+			for _, p := range imgs {
+				items = append(items, app.MenuItem{
+					Label: filepath.Base(p),
+					Value: p,
+					Desc:  filepath.Dir(p),
+				})
+			}
+			menu := app.NewMenu("Set Wallpaper", items, nil, func(it app.MenuItem) tea.Cmd {
+				pick := it.Value
+				return func() tea.Msg {
+					if err := wallpaper.Set(pick); err != nil {
+						return app.ToastMsg{Text: "Error: " + err.Error(), IsErr: true}
+					}
+					return app.ToastMsg{Text: "Wallpaper set: " + filepath.Base(pick)}
+				}
+			})
+			return app.PushMsg{Screen: menu}
 		},
 	)
 }

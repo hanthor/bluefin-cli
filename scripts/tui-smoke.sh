@@ -29,7 +29,13 @@ cap() { tmux capture-pane -t "$SESSION" -p > "$DIR/cap.txt"; }
 keys() { tmux send-keys -t "$SESSION" "$@"; sleep "${SLEEP:-0.5}"; }
 
 tmux new-session -d -s "$SESSION" -x 100 -y 28 "$BIN menu"
-sleep 2
+# Wait for the shell to paint before driving keys (slow/loaded hosts).
+n=0
+until tmux capture-pane -t "$SESSION" -p 2>/dev/null | grep -q "Bluefin CLI"; do
+  n=$((n+1)); [ $n -gt 30 ] && { echo "FAIL: app did not start"; exit 1; }
+  sleep 0.5
+done
+sleep 0.5
 
 cap
 assert "main menu renders"        "Bluefin CLI › Home"

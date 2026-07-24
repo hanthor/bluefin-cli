@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"runtime"
 	"sort"
 
 	"github.com/spf13/viper"
@@ -24,8 +25,14 @@ type Profile struct {
 	EnabledShells []string        `json:"enabled_shells"`
 }
 
-// unixShells are the shells import will reconcile exactly.
-var unixShells = []string{"bash", "zsh", "fish"}
+// reconciledShells are the shells import will reconcile exactly on this
+// platform (Windows manages the PowerShell profile instead of rc files).
+func reconciledShells() []string {
+	if runtime.GOOS == "windows" {
+		return []string{"powershell"}
+	}
+	return []string{"bash", "zsh", "fish"}
+}
 
 // Export captures the current setup.
 func Export(currentShell string) (*Profile, error) {
@@ -106,7 +113,7 @@ func (p *Profile) Apply() error {
 		want[sh] = true
 	}
 	current := shell.CheckStatus()
-	for _, sh := range unixShells {
+	for _, sh := range reconciledShells() {
 		if current[sh] == want[sh] {
 			continue
 		}
@@ -116,4 +123,49 @@ func (p *Profile) Apply() error {
 		fmt.Printf("shell %s: %v\n", sh, want[sh])
 	}
 	return nil
+}
+
+// Diff reports the changes Apply would make to reach want from current —
+// empty means no drift.
+func Diff(current, want *Profile) []string {
+	var out []string
+
+	if want.Flavor != "" && want.Flavor != current.Flavor {
+		out = append(out, fmt.Sprintf("flavor: %s -> %s", current.Flavor, want.Flavor))
+	}
+
+	names := make([]string, 0, len(want.Tools))
+	for name := range want.Tools {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if current.Tools[name] != want.Tools[name] {
+			state := "off -> on"
+			if !want.Tools[name] {
+				state = "on -> off"
+			}
+			out = append(out, fmt.Sprintf("tool %s: %s", name, state))
+		}
+	}
+
+	cur := map[string]bool{}
+	for _, sh := range current.EnabledShells {
+		cur[sh] = true
+	}
+	wanted := map[string]bool{}
+	for _, sh := range want.EnabledShells {
+		wanted[sh] = true
+		if !cur[sh] {
+			out = append(out, fmt.Sprintf("shell %s: disabled -> enabled", sh))
+		}
+	}
+	// Diff is a pure comparison of the two documents (Apply filters by
+	// platform); anything enabled now but absent from the profile is drift.
+	for _, sh := range current.EnabledShells {
+		if !wanted[sh] {
+			out = append(out, fmt.Sprintf("shell %s: enabled -> disabled", sh))
+		}
+	}
+	return out
 }
