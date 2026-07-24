@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/tuna-os/bluefin-cli/internal/env"
 	"github.com/tuna-os/bluefin-cli/internal/shell"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
 	"github.com/tuna-os/bluefin-cli/internal/tui/theme"
@@ -50,13 +51,11 @@ func runDoctorFixes() {
 			fmt.Println("  failed: " + err.Error())
 		}
 	}
-	if _, err := exec.LookPath("brew"); err == nil {
-		for _, tool := range []string{"eza", "fzf", "starship"} {
-			if _, err := exec.LookPath(tool); err != nil {
-				fmt.Println("fix: installing " + tool)
-				if out, err := exec.Command("brew", "install", tool).CombinedOutput(); err != nil {
-					fmt.Printf("  failed: %v\n%s", err, out)
-				}
+	for _, tool := range []string{"eza", "fzf", "starship"} {
+		if _, err := exec.LookPath(tool); err != nil {
+			fmt.Println("fix: installing " + tool)
+			if err := shell.EnsureInstalled(tool); err != nil {
+				fmt.Printf("  failed: %v\n", err)
 			}
 		}
 	}
@@ -176,6 +175,22 @@ func doctorReport() (string, int) {
 }
 
 func checkBrew() checkResult {
+	// Homebrew requires glibc (its portable Ruby bootstrap can't even start
+	// on musl) and isn't the right answer here even if a stray `brew` shim
+	// is on PATH from another system's dotfiles — check package manager
+	// fitness first, not just binary presence.
+	if env.IsAlpine() {
+		switch {
+		case commandExists("coldbrew"):
+			return checkResult{ok: true, name: "Package manager: coldbrew"}
+		case commandExists("apk"):
+			return checkResult{ok: true, name: "Package manager: apk",
+				note: "shell tool installs use 'sudo apk add' — passwordless sudo required"}
+		default:
+			return checkResult{name: "Package manager", warn: true,
+				note: "neither coldbrew nor apk found — shell tool installs will be skipped"}
+		}
+	}
 	if _, err := exec.LookPath("brew"); err == nil {
 		return checkResult{ok: true, name: "Homebrew on PATH"}
 	}
@@ -189,6 +204,11 @@ func checkBrew() checkResult {
 	}
 	return checkResult{name: "Homebrew on PATH", warn: true,
 		note: "brew not found — Install Apps bundles need it: https://brew.sh"}
+}
+
+func commandExists(bin string) bool {
+	_, err := exec.LookPath(bin)
+	return err == nil
 }
 
 func checkShellIntegration() checkResult {

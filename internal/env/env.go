@@ -76,6 +76,13 @@ func IsWSL() bool {
 	return false
 }
 
+// IsAlpine reports whether this system uses apk (Alpine Linux and its
+// derivatives, including postmarketOS) — musl libc, no Homebrew support.
+func IsAlpine() bool {
+	_, err := os.Stat("/etc/alpine-release")
+	return err == nil
+}
+
 func IsWindows() bool {
 	return runtimeGOOS == "windows"
 }
