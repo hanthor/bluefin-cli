@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   submit:
-    runs-on: blacksmith-4vcpu-windows-2025
+    runs-on: windows-2025
     env:
       PACKAGE_ID: Hanthor.BluefinCLI
       WINGET_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
