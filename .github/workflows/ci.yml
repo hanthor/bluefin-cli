@@ -96,6 +96,12 @@ jobs:
     - name: Build container
       run: podman build -t bluefin-cli-dev -f Containerfile.dev .
 
+    # The suite under ./test/ execs the built binary from the repo root
+    # (`../bluefin-cli`), so it has to be built inside the container before the
+    # tests run — the host workspace is bind-mounted in and carries no binary of
+    # its own. Building it in a separate host step instead would link against
+    # the host toolchain rather than the container's, which is the whole point
+    # of this job.
     - name: Run container tests
       run: |
         podman run --rm \
@@ -103,7 +109,7 @@ jobs:
             -w /workspace \
             -e HOME=/root \
             bluefin-cli-dev \
-            go test -v ./test/...
+            sh -c 'go build -tags extra -o bluefin-cli . && go test -v ./test/...'
 
   cross-compile:
     name: Cross-compile (all targets)
