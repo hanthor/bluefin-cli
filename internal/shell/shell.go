@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"charm.land/huh/v2"
 	"charm.land/lipgloss/v2"
@@ -727,9 +728,89 @@ func Toggle(shell string, enable bool) error {
 	return nil
 }
 
+// initCacheMtime returns the modification time of the shell config file
+// (used to decide whether the cached init output is still valid).
+func initCacheMtime(shell string) (time.Time, error) {
+	configPath, err := getConfigPath()
+	if err != nil {
+		return time.Time{}, err
+	}
+	info, err := os.Stat(configPath)
+	if err != nil {
+		// Config doesn't exist yet — treat as epoch so any cache is
+		// considered newer and we skip the expensive tool checks.
+		return time.Time{}, nil
+	}
+	return info.ModTime(), nil
+}
+
+// loadInitCache returns the cached init script for shell if it's still fresh
+// (binary and config haven't changed since the cache was written).
+func loadInitCache(shell string) (string, bool) {
+	cachePath, err := getInitCachePath(shell)
+	if err != nil {
+		return "", false
+	}
+	cacheInfo, err := os.Stat(cachePath)
+	if err != nil {
+		return "", false
+	}
+	cacheMtime := cacheInfo.ModTime()
+
+	// Must be newer than the bluefin-cli binary.
+	if exe, err := os.Executable(); err == nil {
+		if exeInfo, err := os.Stat(exe); err == nil {
+			if !cacheMtime.After(exeInfo.ModTime()) {
+				return "", false
+			}
+		}
+	}
+
+	// Must be newer than the shell config file.
+	if cfgMtime, err := initCacheMtime(shell); err == nil {
+		if !cacheMtime.After(cfgMtime) {
+			return "", false
+		}
+	}
+
+	content, err := os.ReadFile(cachePath)
+	if err != nil {
+		return "", false
+	}
+	return string(content), true
+}
+
+// saveInitCache writes the generated init script to a cache file.
+func saveInitCache(shell, script string) {
+	cachePath, err := getInitCachePath(shell)
+	if err != nil {
+		return
+	}
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		return
+	}
+	_ = os.WriteFile(cachePath, []byte(script), 0644)
+}
+
+// getInitCachePath returns the path to the cached init script for a shell.
+func getInitCachePath(shell string) (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".cache", "bluefin-cli", fmt.Sprintf("init-%s.sh", shell)), nil
+}
+
 func Init(shell string, config *Config) (string, error) {
 	if config == nil {
 		config = DefaultConfig(shell)
+	}
+
+	// Try to serve a cached init script to avoid expensive tool-availability
+	// checks on every interactive shell startup (issue #59). The cache is
+	// invalidated when the bluefin-cli binary or the shell config changes.
+	if cached, ok := loadInitCache(shell); ok {
+		return cached, nil
 	}
 
 	tools := ToolsForShell(shell)
@@ -798,7 +879,9 @@ func Init(shell string, config *Config) (string, error) {
 
 		sb.WriteString("\n")
 		sb.WriteString(shellPowerShellScript)
-		return sb.String(), nil
+		result := sb.String()
+		saveInitCache(shell, result)
+		return result, nil
 	}
 
 	for _, tool := range tools {
@@ -827,7 +910,9 @@ func Init(shell string, config *Config) (string, error) {
 		sb.WriteString(shellShScript)
 	}
 
-	return sb.String(), nil
+	result := sb.String()
+	saveInitCache(shell, result)
+	return result, nil
 }
 
 func CheckStatus() map[string]bool {
