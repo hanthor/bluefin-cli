@@ -66,6 +66,51 @@ jobs:
     - name: Run TUI state suite
       run: ./scripts/tui-state.sh ./bluefin-cli-smoke
 
+  integration-test:
+    name: Integration Tests
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Set up Go
+      uses: actions/setup-go@v7
+      with:
+        go-version: '1.26'
+
+    - name: Build binary
+      run: go build -tags extra -o bluefin-cli .
+
+    - name: Run integration tests
+      run: go test -v ./test/...
+
+  container-test:
+    name: Container-based Tests
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Build container
+      run: podman build -t bluefin-cli-dev -f Containerfile.dev .
+
+    # The suite under ./test/ execs the built binary from the repo root
+    # (`../bluefin-cli`), so it has to be built inside the container before the
+    # tests run — the host workspace is bind-mounted in and carries no binary of
+    # its own. Building it in a separate host step instead would link against
+    # the host toolchain rather than the container's, which is the whole point
+    # of this job.
+    - name: Run container tests
+      run: |
+        podman run --rm \
+            -v "$(pwd):/workspace:Z" \
+            -w /workspace \
+            -e HOME=/root \
+            bluefin-cli-dev \
+            sh -c 'go build -tags extra -o bluefin-cli . && go test -v ./test/...'
+
   cross-compile:
     name: Cross-compile (all targets)
     runs-on: blacksmith-4vcpu-ubuntu-2404
