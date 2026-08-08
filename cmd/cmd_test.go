@@ -23,8 +23,8 @@ func TestRootCommand_HasSubcommands(t *testing.T) {
 		"shell",
 		"starship",
 		"status",
-		"sunset",
 		"uninstall",
+		// "sunset" lives behind the `extra` build tag — see sunset_test.go.
 	}
 	for _, name := range expected {
 		cmd, _, err := rootCmd.Find([]string{name})
@@ -94,18 +94,6 @@ func TestStarshipCommand_HasSubcommands(t *testing.T) {
 		if err != nil || sub == cmd || sub == nil {
 			t.Errorf("missing starship subcommand %q", name)
 		}
-	}
-}
-
-func TestSunsetCommand_HasSubcommands(t *testing.T) {
-	cmd, _, err := rootCmd.Find([]string{"sunset"})
-	if err != nil || cmd == rootCmd {
-		t.Fatal("sunset command not found")
-	}
-	// Should have setup subcommand
-	sub, _, err := cmd.Find([]string{"setup"})
-	if err != nil || sub == cmd || sub == nil {
-		t.Error("missing sunset subcommand 'setup'")
 	}
 }
 
