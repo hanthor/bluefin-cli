@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -62,7 +63,15 @@ func TestThemeCommand_UnknownFlavor_Errors(t *testing.T) {
 // TestThemeCommand_SetFlavor_Persists sets a valid flavor and verifies the
 // config write path (isolated HOME so nothing outside the test is touched).
 func TestThemeCommand_SetFlavor_Persists(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	home := t.TempDir()
+	// os.UserHomeDir() honours $USERPROFILE on Windows and $HOME elsewhere;
+	// set whichever the platform uses so the config write lands in the
+	// isolated temp dir on every OS.
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", home)
+	} else {
+		t.Setenv("HOME", home)
+	}
 	t.Cleanup(viper.Reset)
 
 	if err := runTheme(t, []string{"mocha"}); err != nil {
@@ -71,7 +80,7 @@ func TestThemeCommand_SetFlavor_Persists(t *testing.T) {
 	if got := viper.GetString("ui.flavor"); got != "mocha" {
 		t.Errorf("viper ui.flavor = %q, want mocha", got)
 	}
-	cfg := filepath.Join(os.Getenv("HOME"), ".config", "bluefin-cli", "config.yaml")
+	cfg := filepath.Join(home, ".config", "bluefin-cli", "config.yaml")
 	data, err := os.ReadFile(cfg)
 	if err != nil {
 		t.Fatalf("expected config file at %s: %v", cfg, err)
