@@ -14,7 +14,7 @@ concurrency:
 jobs:
   test:
     name: Run Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     
     steps:
     - name: Checkout code
@@ -43,7 +43,7 @@ jobs:
 
   tui-smoke:
     name: TUI Smoke (tmux)
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
     - name: Checkout code
@@ -68,7 +68,7 @@ jobs:
 
   cross-compile:
     name: Cross-compile (all targets)
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
     - name: Checkout code
@@ -92,7 +92,7 @@ jobs:
 
   test-windows:
     name: Run Tests (windows)
-    runs-on: windows-latest
+    runs-on: blacksmith-4vcpu-windows-2025
 
     steps:
     - name: Checkout code
@@ -111,7 +111,7 @@ jobs:
 
   test-macos:
     name: Run Tests (macos)
-    runs-on: macos-latest
+    runs-on: blacksmith-6vcpu-macos-15
 
     steps:
     - name: Checkout code
@@ -130,7 +130,7 @@ jobs:
 
   goreleaser-check:
     name: goreleaser config
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
     - name: Checkout code
@@ -152,7 +152,7 @@ jobs:
 
   gofmt:
     name: gofmt
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
     - name: Checkout code
@@ -172,7 +172,7 @@ jobs:
 
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     
     steps:
     - name: Checkout code
