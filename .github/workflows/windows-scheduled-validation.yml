@@ -39,9 +39,9 @@ jobs:
         shell: pwsh
         run: .\bluefin-cli.exe status
 
-      - name: Smoke check wallpapers help
+      - name: Smoke check wallpaper help
         shell: pwsh
-        run: .\bluefin-cli.exe wallpapers --help
+        run: .\bluefin-cli.exe wallpaper --help
 
       - name: Smoke check init output
         shell: pwsh
