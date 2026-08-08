@@ -9,7 +9,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "go mod tidy",
+        "prepareCmd": "go mod tidy -diff",
         "publishCmd": "goreleaser release --clean"
       }
     ]

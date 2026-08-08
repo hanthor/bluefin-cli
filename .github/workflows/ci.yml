@@ -195,6 +195,30 @@ jobs:
         echo "$out" | grep -q "valid, but uses deprecated" && exit 0
         exit 1
 
+  # go.mod/go.sum drift is invisible to every other job here: `go build` and
+  # `go test` happily tolerate stale go.sum lines and an unsorted require
+  # block. The release job is the only thing that ever ran `go mod tidy`, so
+  # drift merged to main silently and then blew up mid-release with
+  # "git is in a dirty state" (tuna-os/bluefin-cli, run 31236007618).
+  # Gate it here instead, where a red check costs nothing.
+  go-mod-tidy:
+    name: go.mod tidy
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Set up Go
+      uses: actions/setup-go@v7
+      with:
+        go-version: '1.26'
+
+    # -diff reports what tidying would change and exits non-zero, without
+    # writing to the working tree.
+    - name: Check go.mod/go.sum are tidy
+      run: go mod tidy -diff
+
   gofmt:
     name: gofmt
     runs-on: blacksmith-4vcpu-ubuntu-2404

@@ -28,6 +28,12 @@ scripts/tui-smoke.sh <binary>     # tmux end-to-end suite (15 assertions; runs i
 - **Anything that prints or blocks must run in `app.RunnerScreen`**, never
   synchronously in a `View`/`Update` (glow queries the terminal and will
   deadlock a synchronous capture).
+- **Keep `go.mod`/`go.sum` tidy in every commit.** `go build`/`go test` ignore
+  stale go.sum lines, so drift (typically a renovate bump that leaves the old
+  version's hashes behind) passes CI, then the release job's `go mod tidy`
+  rewrites the files and goreleaser aborts with "git is in a dirty state" —
+  *after* the tag and GitHub release already exist. The `go.mod tidy` CI job
+  now gates this; release-side it is `go mod tidy -diff` (non-mutating).
 - **goreleaser repository `token`/`private_key` fields render env-only** —
   no template functions (`envOrDefault` crashes there); `skip_upload` gets
   the full template context.
