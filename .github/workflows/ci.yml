@@ -14,7 +14,7 @@ concurrency:
 jobs:
   test:
     name: Run Tests
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     
     steps:
     - name: Checkout code
@@ -43,7 +43,7 @@ jobs:
 
   tui-smoke:
     name: TUI Smoke (tmux)
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Checkout code
@@ -68,7 +68,7 @@ jobs:
 
   integration-test:
     name: Integration Tests
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Checkout code
@@ -87,7 +87,7 @@ jobs:
 
   container-test:
     name: Container-based Tests
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Checkout code
@@ -113,7 +113,7 @@ jobs:
 
   cross-compile:
     name: Cross-compile (all targets)
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Checkout code
@@ -137,7 +137,7 @@ jobs:
 
   test-windows:
     name: Run Tests (windows)
-    runs-on: blacksmith-4vcpu-windows-2025
+    runs-on: windows-2025
 
     steps:
     - name: Checkout code
@@ -156,7 +156,7 @@ jobs:
 
   test-macos:
     name: Run Tests (macos)
-    runs-on: blacksmith-6vcpu-macos-15
+    runs-on: macos-15
 
     steps:
     - name: Checkout code
@@ -175,7 +175,7 @@ jobs:
 
   goreleaser-check:
     name: goreleaser config
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Checkout code
@@ -203,7 +203,7 @@ jobs:
   # Gate it here instead, where a red check costs nothing.
   go-mod-tidy:
     name: go.mod tidy
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Checkout code
@@ -221,7 +221,7 @@ jobs:
 
   gofmt:
     name: gofmt
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Checkout code
@@ -241,7 +241,7 @@ jobs:
 
   lint:
     name: Lint
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     
     steps:
     - name: Checkout code
