@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/charmbracelet/fang"
+	"charm.land/fang/v2"
 	"github.com/spf13/cobra"
 	"github.com/tuna-os/bluefin-cli/internal/countme"
 	"github.com/tuna-os/bluefin-cli/internal/status"
