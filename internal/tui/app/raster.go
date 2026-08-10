@@ -146,8 +146,8 @@ func (c *PixelCanvas) EncodeSixel() RasterEncoded {
 	// channel (0, 51, 102, 153, 204, 255).  Map each colour to its index
 	// and collect the used palette entries.
 	type rgb struct{ r, g, b uint8 }
-	paletteMap := map[rgb]int{}   // rgb -> sixel palette index
-	pixelIdx := make([]int, w*h)  // palette index per pixel, -1 = transparent
+	paletteMap := map[rgb]int{}  // rgb -> sixel palette index
+	pixelIdx := make([]int, w*h) // palette index per pixel, -1 = transparent
 	pixelIdxInit := false
 
 	for i := range pixelIdx {
@@ -249,7 +249,7 @@ func (c *PixelCanvas) EncodeSixel() RasterEncoded {
 
 			if colorIdx != lastColor {
 				// Emit colour select: #<idx>
-				data.WriteString(fmt.Sprintf("#%d", colorIdx))
+				fmt.Fprintf(&data, "#%d", colorIdx)
 				lastColor = colorIdx
 			}
 			// Emit the sixel character: the sixel value + 63 (0x3F) maps

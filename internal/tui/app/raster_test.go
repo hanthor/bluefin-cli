@@ -92,7 +92,7 @@ func TestRenderImageWithTextHalfBlock(t *testing.T) {
 	hi := strings.Index(out, "header")
 	fi := strings.Index(out, "footer")
 	ci := strings.Index(out, "▀")
-	if !(hi < ci && ci < fi) {
+	if hi >= ci || ci >= fi {
 		t.Errorf("expected header < canvas < footer order: %q", out)
 	}
 }
