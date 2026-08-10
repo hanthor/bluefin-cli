@@ -178,7 +178,7 @@ func setWallpaperFlow() tea.Cmd {
 					Desc:  filepath.Dir(p),
 				})
 			}
-			menu := app.NewMenu("Set Wallpaper", items, nil, func(it app.MenuItem) tea.Cmd {
+			picker := app.NewWallpaperPicker("Set Wallpaper", items, func(it app.MenuItem) tea.Cmd {
 				pick := it.Value
 				return func() tea.Msg {
 					if err := wallpaper.Set(pick); err != nil {
@@ -187,7 +187,7 @@ func setWallpaperFlow() tea.Cmd {
 					return app.ToastMsg{Text: "Wallpaper set: " + filepath.Base(pick)}
 				}
 			})
-			return app.PushMsg{Screen: menu}
+			return app.PushMsg{Screen: picker}
 		},
 	)
 }
