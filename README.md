@@ -42,6 +42,18 @@ bluefin-cli shell powershell on
 
 ### Homebrew (Linux / macOS)
 
+The formula is published automatically by GoReleaser to the
+[`tuna-os/homebrew-tap`](https://github.com/tuna-os/homebrew-tap) tap on every
+release ([#15](https://github.com/tuna-os/bluefin-cli/issues/15)):
+
+```bash
+brew tap tuna-os/tap
+brew install bluefin-cli
+```
+
+It is also available from `ublue-os/homebrew-experimental-tap`, synced from the
+source-build formula in [`contrib/homebrew/bluefin-cli.rb`](contrib/homebrew/bluefin-cli.rb):
+
 ```bash
 brew tap ublue-os/homebrew-experimental-tap
 brew install bluefin-cli
@@ -98,6 +110,13 @@ go build -o bluefin-cli .
 On Windows, use `go build -o bluefin-cli.exe .`.
 
 Maintainers: package publishing (Homebrew tap, Winget, Scoop) is automated by GoReleaser on release; `.github/workflows/winget.yml` is a manual fallback for re-submitting a Winget version.
+
+Homebrew release process: on every tagged release GoReleaser publishes the
+binary formula to `tuna-os/homebrew-tap` (requires the `HOMEBREW_TAP_TOKEN`
+secret). External taps that build from source, such as
+`ublue-os/homebrew-experimental-tap`, must be synced manually — bump `url` and
+`sha256` in [`contrib/homebrew/bluefin-cli.rb`](contrib/homebrew/bluefin-cli.rb)
+and open a PR in that tap.
 
 ## 📖 Usage
 
