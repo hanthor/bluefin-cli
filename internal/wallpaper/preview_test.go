@@ -25,10 +25,12 @@ func TestDecodeAndScale(t *testing.T) {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
 	if err := png.Encode(f, src); err != nil {
-		f.Close()
+		_ = f.Close()
 		t.Fatalf("failed to encode png: %v", err)
 	}
-	f.Close()
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close temp file: %v", err)
+	}
 
 	scaled, err := DecodeAndScale(filePath, 20, 10)
 	if err != nil {

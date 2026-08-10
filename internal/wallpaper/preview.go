@@ -16,7 +16,7 @@ func DecodeAndScale(path string, targetWidth, targetHeight int) (image.Image, er
 	if err != nil {
 		return nil, fmt.Errorf("failed to open image: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	img, _, err := image.Decode(f)
 	if err != nil {
