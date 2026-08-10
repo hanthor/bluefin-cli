@@ -314,7 +314,9 @@ func (g *GameScreen) View(width, height int) string {
 	dim := lipgloss.NewStyle().Foreground(t.TextFaint)
 
 	rows := max(height-2, 10)
-	cv := NewCanvas(width, rows)
+	backend := g.rasterBackend()
+	rc := NewRasterCanvas(width, rows, backend)
+	cv := rc.PixelCanvas
 	groundY := cv.Height() - 3 // pixel row of the ground line
 
 	// Seafloor: a 2px sandy band with speckles.
@@ -359,17 +361,38 @@ func (g *GameScreen) View(width, height int) string {
 	}
 	cv.Blit(sprite, solid(t.Success), gameDinoX, groundY-gameDinoH-g.lift()+1)
 
+	// Render the scene: kitty/sixel if the terminal supports it,
+	// otherwise the portable half-block canvas.
+	scene := rc.RenderImage()
+	// When using graphics protocols, pad with blank rows so the
+	// terminal reserves vertical space for the image.
+	if backend != RasterHalfBlock {
+		imgRows := min(rc.ImageRows(), rows)
+		// The escape sequence itself does not advance the cursor as many
+		// rows as the image occupies; emit newlines to reserve space, then
+		// move the cursor back up so the image draws over the reserved area.
+		pad := strings.Repeat("\n", imgRows)
+		scene = "\x1b7" + pad + "\x1b8" + scene
+	}
+
 	var b strings.Builder
 	score := fmt.Sprintf(" score %d · %dm deep", g.score, g.score/10)
 	if g.best > 0 {
 		score += fmt.Sprintf("   best %d", g.best)
 	}
 	b.WriteString(dim.Render(score) + "\n")
-	b.WriteString(cv.Render())
+	b.WriteString(scene)
 	if g.over {
 		msg := lipgloss.NewStyle().Foreground(t.Error).Bold(true).Render(" 💀 wiped out — ") +
 			dim.Render("r to retry, esc to leave")
 		b.WriteString("\n" + msg)
 	}
 	return b.String()
+}
+
+// rasterBackend returns the best available graphics backend, or the
+// half-block fallback.  It checks the global DefaultRasterBackend singleton
+// (set once at startup), and also allows per-screen override.
+func (g *GameScreen) rasterBackend() RasterBackend {
+	return DefaultRasterBackend
 }
