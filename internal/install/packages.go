@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+
+	"github.com/tuna-os/bluefin-cli/internal/env"
 )
 
 // Package is a cross-platform representation of a single installable package.
@@ -127,7 +129,21 @@ func MarkInstalled(pkgs []Package) []Package {
 	if runtime.GOOS == "windows" {
 		return markInstalledWinget(pkgs)
 	}
+	if env.IsAlpine() {
+		return markInstalledAlpine(pkgs)
+	}
 	return markInstalledBrew(pkgs)
+}
+
+func markInstalledAlpine(pkgs []Package) []Package {
+	result := make([]Package, len(pkgs))
+	for i, p := range pkgs {
+		if p.Kind == "brew" {
+			p.Installed = exec.Command("apk", "info", "-e", alpinePackageName(p.ID)).Run() == nil
+		}
+		result[i] = p
+	}
+	return result
 }
 
 // InstalledCasks returns the set of installed Homebrew casks (short names);
@@ -233,6 +249,9 @@ func UninstallWingetPackages(ids []string) error {
 // InstallBrewPackages installs a list of brew formulae/casks.
 // Formulae and casks are batched into separate single commands.
 func InstallBrewPackages(pkgs []Package) error {
+	if env.IsAlpine() {
+		return InstallAlpinePackages(pkgs)
+	}
 	var formulae, casks []string
 	for _, p := range pkgs {
 		if p.Kind == "cask" {
@@ -262,4 +281,24 @@ func InstallBrewPackages(pkgs []Package) error {
 		}
 	}
 	return nil
+}
+
+// InstallPackages dispatches the shared menu operation to the native package
+// manager for the current platform.
+func InstallPackages(pkgs []Package) error {
+	if env.IsAlpine() {
+		return InstallAlpinePackages(pkgs)
+	}
+	return InstallBrewPackages(pkgs)
+}
+
+func UninstallPackages(pkgs []Package) error {
+	if env.IsAlpine() {
+		return UninstallAlpinePackages(pkgs)
+	}
+	names := make([]string, 0, len(pkgs))
+	for _, p := range pkgs {
+		names = append(names, p.Name)
+	}
+	return UninstallBrewPackages(names)
 }

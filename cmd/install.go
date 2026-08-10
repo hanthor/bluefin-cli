@@ -138,16 +138,12 @@ func applyPackageChanges(toInstall, toRemove []install.Package) {
 		}
 	} else {
 		if len(toInstall) > 0 {
-			if err := install.InstallBrewPackages(toInstall); err != nil {
+			if err := install.InstallPackages(toInstall); err != nil {
 				fmt.Println(tui.ErrorStyle.Render(fmt.Sprintf("Install error: %v", err)))
 			}
 		}
 		if len(toRemove) > 0 {
-			ids := make([]string, 0, len(toRemove))
-			for _, p := range toRemove {
-				ids = append(ids, p.Name)
-			}
-			if err := install.UninstallBrewPackages(ids); err != nil {
+			if err := install.UninstallPackages(toRemove); err != nil {
 				fmt.Println(tui.ErrorStyle.Render(fmt.Sprintf("Uninstall error: %v", err)))
 			}
 		}
