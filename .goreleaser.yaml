@@ -173,7 +173,9 @@ winget:
     ids:
       - standard
     # Skip until the WINGET_TOKEN secret is configured, so a missing token
-    # can't fail the release.
+    # can't fail the release. Note: WINGET_TOKEN must be a classic PAT with
+    # public_repo scope (fine-grained PATs cannot open PRs against upstream
+    # microsoft/winget-pkgs; see tuna-os/bluefin-cli#110).
     skip_upload: '{{ if envOrDefault "WINGET_TOKEN" "" }}auto{{ else }}true{{ end }}'
     # Submissions to microsoft/winget-pkgs must come from a fork: goreleaser
     # pushes the manifest branch to the token owner's fork and opens the PR
