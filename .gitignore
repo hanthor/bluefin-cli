@@ -22,8 +22,8 @@ vendor/
 go.work
 
 # Built binaries
-bluefin-cli
-bluefin-cli-plus
+/bluefin-cli
+/bluefin-cli-plus
 
 # Test coverage output
 coverage
