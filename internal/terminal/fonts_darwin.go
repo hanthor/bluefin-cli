@@ -120,19 +120,19 @@ func setITerm2Font(configDir, family string) error {
 func FontFamilyToSystemFont(family string) string {
 	// Common mappings from brew/cask names to macOS font family names
 	mapping := map[string]string{
-	"JetBrainsMono Nerd Font":   "JetBrainsMono NFP",
-	"CaskaydiaCove Nerd Font":   "CaskaydiaCove NFP",
-	"CaskaydiaMono Nerd Font":   "CaskaydiaCove NFP",
-	"FiraCode Nerd Font":        "FiraCode NFP",
-	"Hack Nerd Font":            "Hack NFP",
-	"0xProto Nerd Font":         "0xProto NFP",
-	"ComicShannsMono Nerd Font": "ComicShannsMono NFP",
-	"Droid Sans Mono Nerd Font": "DroidSansM NFP",
-	"Go Mono Nerd Font":         "GoMono NFP",
-	"IBM Plex Mono Nerd Font":   "BlexMono NFP",
-	"Source Code Pro Nerd Font": "SauceCodePro NFP",
-	"Ubuntu Nerd Font":          "Ubuntu NFP",
-	"UbuntuMono Nerd Font":      "UbuntuMono NFP",
+		"JetBrainsMono Nerd Font":   "JetBrainsMono NFP",
+		"CaskaydiaCove Nerd Font":   "CaskaydiaCove NFP",
+		"CaskaydiaMono Nerd Font":   "CaskaydiaCove NFP",
+		"FiraCode Nerd Font":        "FiraCode NFP",
+		"Hack Nerd Font":            "Hack NFP",
+		"0xProto Nerd Font":         "0xProto NFP",
+		"ComicShannsMono Nerd Font": "ComicShannsMono NFP",
+		"Droid Sans Mono Nerd Font": "DroidSansM NFP",
+		"Go Mono Nerd Font":         "GoMono NFP",
+		"IBM Plex Mono Nerd Font":   "BlexMono NFP",
+		"Source Code Pro Nerd Font": "SauceCodePro NFP",
+		"Ubuntu Nerd Font":          "Ubuntu NFP",
+		"UbuntuMono Nerd Font":      "UbuntuMono NFP",
 	}
 	if mapped, ok := mapping[family]; ok {
 		return mapped
