@@ -65,6 +65,12 @@ brew install bluefin-cli
 winget install --id Hanthor.BluefinCLI --exact
 ```
 
+### Chocolatey (Windows)
+
+```powershell
+choco install bluefin-cli
+```
+
 ### Scoop (Windows)
 
 ```powershell

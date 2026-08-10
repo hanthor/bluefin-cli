@@ -192,3 +192,30 @@ winget:
           owner: microsoft
           name: winget-pkgs
           branch: master
+
+# Chocolatey package for Windows users. Requires a CHOCOLATEY_API_KEY secret
+# (API key for push to chocolatey.org community repository) and the `choco`
+# binary on the runner — goreleaser shells out to it and does not install it.
+# Unlike the other publishers, this pipe has no templated skip option, so the
+# release workflow passes `--skip=chocolatey` when the key or `choco` is
+# missing, keeping a release from failing on either.
+chocolateys:
+  - name: bluefin-cli
+    ids:
+      - standard
+    project_url: "https://github.com/tuna-os/bluefin-cli"
+    project_source_url: "https://github.com/tuna-os/bluefin-cli"
+    docs_url: "https://github.com/tuna-os/bluefin-cli/blob/main/README.md"
+    bug_tracker_url: "https://github.com/tuna-os/bluefin-cli/issues"
+    title: "Bluefin CLI"
+    authors: "TunaOS"
+    owners: "TunaOS"
+    summary: "Make your terminal experience awesome — shell config, tool bundles, and theming for any OS"
+    description: |
+      A powerful, modern CLI tool for managing shell configuration and
+      development environment customization on Bluefin and Universal Blue.
+    tags: "bluefin cli shell ublue universal-blue"
+    release_notes: "https://github.com/tuna-os/bluefin-cli/releases/tag/{{.Tag}}"
+    license_url: "https://github.com/tuna-os/bluefin-cli/blob/main/LICENSE"
+    api_key: '{{ envOrDefault "CHOCOLATEY_API_KEY" "" }}'
+

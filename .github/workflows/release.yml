@@ -23,14 +23,30 @@ jobs:
           go-version: '1.26'
           cache: true
 
+      # The chocolatey pipe has no templated skip option and shells out to
+      # `choco`, which goreleaser does not install. Skip the whole pipe unless
+      # both the API key and the binary are available, so neither a missing
+      # secret nor an ubuntu runner without choco can fail the release.
+      - name: Determine GoReleaser args
+        id: goreleaser_args
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          args="release --clean"
+          if [ -z "${CHOCOLATEY_API_KEY}" ] || ! command -v choco >/dev/null 2>&1; then
+            args="${args} --skip=chocolatey"
+          fi
+          echo "args=${args}" >> "$GITHUB_OUTPUT"
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean
+          args: ${{ steps.goreleaser_args.outputs.args }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WINGET_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           SCOOP_BUCKET_TOKEN: ${{ secrets.SCOOP_BUCKET_TOKEN }}
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
