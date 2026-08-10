@@ -15,7 +15,9 @@ bucket, AUR, winget — every publisher self-gates with
 `skip_upload: {{ if envOrDefault "SECRET" "" }}auto{{ else }}true{{ end }}`
 so a missing secret can never fail a release. Repository `token`/
 `private_key` fields render in goreleaser's env-only mode: plain
-`{{ .Env.X }}` only, no functions. Self-update (`internal/update`) refuses
+`{{ .Env.X }}` only, no functions. `WINGET_TOKEN` must be a classic PAT with
+`public_repo` scope to enable opening PRs against upstream `microsoft/winget-pkgs`
+(fine-grained PATs return 403; see #110). Self-update (`internal/update`) refuses
 archives that don't match the release's checksums.txt.
 
 ## Consequences
