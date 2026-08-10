@@ -166,6 +166,9 @@ func TestUpdateWezTermFont(t *testing.T) {
 func TestUpdateGhosttyFont(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
+	// os.UserHomeDir() reads USERPROFILE on Windows and HOME on unix; set both
+	// so ghosttyConfigDir resolves to the temp dir on every platform.
+	t.Setenv("USERPROFILE", dir)
 	// ghosttyConfigDir uses os.UserHomeDir(); override by creating the config dir structure
 	ghosttyDir := filepath.Join(dir, ".config", "ghostty")
 	if err := os.MkdirAll(ghosttyDir, 0o755); err != nil {
