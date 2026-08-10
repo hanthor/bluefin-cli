@@ -133,9 +133,9 @@ func ghosttyConfigDir() (string, error) {
 	return filepath.Join(home, ".config", "ghostty"), nil
 }
 
-// detectNerdFont returns a font-family line for a known installed Nerd
+// DetectNerdFont returns a font-family line for a known installed Nerd
 // Font, or "" to let Ghostty use its default.
-func detectNerdFont() string {
+func DetectNerdFont() string {
 	home, _ := os.UserHomeDir()
 	dirs := []string{
 		filepath.Join(home, "Library", "Fonts"),
@@ -155,6 +155,12 @@ func detectNerdFont() string {
 		{"FiraCodeNerdFont", "FiraCode Nerd Font"},
 		{"HackNerdFont", "Hack Nerd Font"},
 		{"0xProtoNerdFont", "0xProto Nerd Font"},
+		{"ComicShannsMonoNerdFont", "ComicShannsMono Nerd Font"},
+		{"DroidSansMonoNerdFont", "Droid Sans Mono Nerd Font"},
+		{"BlexMonoNerdFont", "IBM Plex Mono Nerd Font"},
+		{"SauceCodeProNerdFont", "Source Code Pro Nerd Font"},
+		{"UbuntuNerdFont", "Ubuntu Nerd Font"},
+		{"GoMonoNerdFont", "Go Mono Nerd Font"},
 	}
 	for _, dir := range dirs {
 		entries, err := os.ReadDir(dir)
@@ -206,7 +212,7 @@ func writeWezTermConfig() error {
 	b.WriteString("  return 'Catppuccin Latte'\n")
 	b.WriteString("end\n")
 	b.WriteString("config.color_scheme = scheme_for_appearance(wezterm.gui.get_appearance())\n")
-	if fam := detectNerdFont(); fam != "" {
+	if fam := DetectNerdFont(); fam != "" {
 		fmt.Fprintf(&b, "config.font = wezterm.font '%s'\n", fam)
 	}
 	b.WriteString("config.window_padding = { left = 8, right = 8, top = 8, bottom = 8 }\n\n")
@@ -235,7 +241,7 @@ func writeGhosttyConfigUnix() error {
 	block.WriteString("theme = light:catppuccin-latte,dark:catppuccin-mocha\n")
 	block.WriteString("window-padding-x = 8\nwindow-padding-y = 8\n")
 	block.WriteString("cursor-style = block\n")
-	if fam := detectNerdFont(); fam != "" {
+	if fam := DetectNerdFont(); fam != "" {
 		fmt.Fprintf(&block, "font-family = %s\n", fam)
 	}
 	block.WriteString(markerEnd + "\n")

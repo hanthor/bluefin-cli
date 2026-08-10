@@ -8,6 +8,7 @@ import (
 	"charm.land/huh/v2"
 	"github.com/spf13/cobra"
 	"github.com/tuna-os/bluefin-cli/internal/env"
+	"github.com/tuna-os/bluefin-cli/internal/terminal"
 	"github.com/tuna-os/bluefin-cli/internal/tui"
 )
 
@@ -66,7 +67,28 @@ func runSunsetSetup() error {
 }
 
 func maybeHandlePostFontInstall() error {
-	// Placeholder for future automated font setting logic (e.g. configuring Windows Terminal or GNOME Console)
-	fmt.Println(tui.SuccessStyle.Render("✓ Recommended fonts downloaded. (Extra: Automated terminal configuration coming soon!)"))
+	font := terminal.DetectNerdFont()
+	if font == "" {
+		fmt.Println(tui.InfoStyle.Render("No Nerd Fonts detected after install. They may need a logout/restart to become visible."))
+		return nil
+	}
+	fmt.Println(tui.SuccessStyle.Render(fmt.Sprintf("✓ Detected Nerd Font: %s", font)))
+
+	terminals := terminal.DetectTerminals()
+	if len(terminals) == 0 {
+		fmt.Println(tui.InfoStyle.Render("No supported terminals detected. Installed fonts are ready to use — set them in your terminal's preferences."))
+		return nil
+	}
+
+	fmt.Println(tui.InfoStyle.Render(fmt.Sprintf("Found %d terminal(s) to configure…", len(terminals))))
+	for _, t := range terminals {
+		fmt.Printf("  Configuring %s…\n", t.Name)
+		if err := terminal.SetTerminalFont(t, font); err != nil {
+			fmt.Println(tui.ErrorStyle.Render(fmt.Sprintf("  ✗ %s: %v", t.Name, err)))
+		} else {
+			fmt.Println(tui.SuccessStyle.Render(fmt.Sprintf("  ✓ %s configured", t.Name)))
+		}
+	}
+	fmt.Println(tui.SuccessStyle.Render("✓ Font setup complete. Restart your terminals to see the new font."))
 	return nil
 }
